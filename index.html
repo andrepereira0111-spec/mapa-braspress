@@ -226,9 +226,18 @@ function applyFilter(){
  restyle();selGroup=null;document.getElementById('detail').style.display='none';
  const arr=inView(lastT);if(FIL===4&&!arr.length){renderList(arr,'Nenhuma isca em manutenção marcada ainda');return}renderList(arr,FIL===null?'Iscas nesta área':'Iscas nesta área · filtro');
 }
+function zoomToFilter(){
+ if(FIL===null)return home();
+ const m=D.filter(match);if(!m.length)return home();
+ const xs=m.map(d=>d.x),ys=m.map(d=>d.y);
+ const x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys);
+ const r=svg.node().getBoundingClientRect();const bw=Math.max(x1-x0,25),bh=Math.max(y1-y0,25);
+ const kk=Math.min(0.8*Math.min(r.width/bw,r.height/bh),fit()*120);
+ toView((x0+x1)/2,(y0+y1)/2,Math.max(kk,fit()),1000);
+}
 const FS=[['Todas',null,D.length],['Nunca passou pelo laboratório',0,D.filter(d=>d.h===0).length],['Já passou pelo laboratório',1,D.filter(d=>d.h>=1).length],['Substituto enviado',2,D.filter(d=>d.h===2).length],['SZ One em teste',3,D.filter(d=>d.t).length],['Entrou em manutenção',4,D.filter(d=>d.m).length]];
 const fb=document.getElementById('filters');
-FS.forEach(([n,v,c],i)=>{const b=document.createElement('button');b.textContent=n+' · '+fmt(c);if(i===0)b.classList.add('on');b.onclick=()=>{[...fb.children].forEach(x=>x.classList.remove('on'));b.classList.add('on');FIL=v;applyFilter()};fb.appendChild(b)});
+FS.forEach(([n,v,c],i)=>{const b=document.createElement('button');b.textContent=n+' · '+fmt(c);if(i===0)b.classList.add('on');b.onclick=()=>{[...fb.children].forEach(x=>x.classList.remove('on'));b.classList.add('on');FIL=v;applyFilter();setTimeout(zoomToFilter,60)};fb.appendChild(b)});
 
 home();
 window.addEventListener('resize',()=>home());
