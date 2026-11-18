@@ -158,6 +158,7 @@ pts.append('circle').attr('class','core').attr('fill',g=>COL[g.h]).attr('stroke'
 pts.append('text').attr('class','cnt').attr('text-anchor','middle').attr('dy','.35em').attr('fill','#021a3a').style('font-family','Saira,sans-serif').style('font-weight',700).text(g=>g.n>1?g.n:'');
 pts.on('click',(ev,g)=>{ev.stopPropagation();selectGroup(g,true)});
 
+const cdots=labG.selectAll('circle').data(CITIES).join('circle').attr('cx',c=>c.x).attr('cy',c=>c.y).attr('fill','#fff').attr('fill-opacity',.85).attr('stroke','#021a3a');
 const labels=labG.selectAll('text').data(CITIES).join('text').attr('class','lbl').attr('x',c=>c.x).attr('y',c=>c.y).text(c=>`${c.n} · ${c.q}`);
 
 let k=1;
@@ -173,7 +174,8 @@ function restyle(){
  pts.select('.ringm').style('display',g=>g.items.some(i=>i.m)?null:'none').attr('stroke-width',2.6/k).attr('r',g=>(15+Math.sqrt(g.n)*2.6)/k*f*1.6);
  pts.select('.halo').attr('r',g=>(5+Math.sqrt(g.n)*2.6)/k*f*1.6);
  pts.select('.cnt').style('font-size',g=>(Math.sqrt(g.n)*1.1+7)/k*f*1.6+'px').style('display',z>6?null:'none');
- const th=z<4?50:z<12?6:z<30?2:0;
+ const th=z<2.5?15:z<5?5:z<10?2:0;
+ cdots.attr('r',2.6/k).attr('stroke-width',1/k).style('display',c=>c.q>=th?null:'none');
  labels.attr('font-size',13/k).attr('stroke-width',3/k).attr('dx',9/k).attr('dy',-9/k).style('display',c=>c.q>=th?null:'none');
  stT.text(e=>z<5?e[1]:e[0]).attr('font-size',(z<5?11:15)/k).attr('stroke-width',3/k).style('display',z<22?null:'none');
  dotsG.attr('opacity',z<3?1:z<8?.4:0);
