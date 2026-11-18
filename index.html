@@ -108,7 +108,7 @@ input{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--lin
 const COL=['#e8eef7','#1ca4f2','#f59f0a'];
 const HIST=['Nunca passou pelo laboratório','Passou pelo laboratório','Substituto enviado na manutenção'];
 let data;
-try{ data=await fetch('mapdata.json').then(r=>r.json()); }catch(e){ document.getElementById('list').textContent='Não foi possível carregar os dados.'; return; }
+try{ data=await fetch('mapdata.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json()); }catch(e){ document.getElementById('list').textContent='Não foi possível carregar os dados.'; return; }
 const D=data.d.map(a=>({id:a[0],cust:a[1],lat:a[2],lon:a[3],rua:a[4],cid:a[5],ult:a[6],bat:a[7],h:a[8],pas:a[9]}));
 const TS=new Set(data.t||[]);D.forEach(d=>d.t=TS.has(d.id));
 const MS=new Set(data.m||[]);D.forEach(d=>d.m=MS.has(d.id));
