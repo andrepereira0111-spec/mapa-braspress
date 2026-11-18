@@ -118,7 +118,6 @@ input{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--lin
 (async function(){
 const COL=['#e8eef7','#1ca4f2','#f59f0a'];
 const HIST=['Nunca passou pelo laboratório','Passou pelo laboratório','Substituto enviado na manutenção'];
-let data;
 async function abrir(senha,blob){
  const b=Uint8Array.from(atob(blob),c=>c.charCodeAt(0)),enc=new TextEncoder();
  const km=await crypto.subtle.importKey('raw',enc.encode(senha),'PBKDF2',false,['deriveKey']);
