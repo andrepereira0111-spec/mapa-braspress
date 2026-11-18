@@ -49,6 +49,8 @@ input{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--lin
 .item .c{font-size:12px;color:var(--muted);text-align:right}
 .lbl{font-family:"Share Tech",monospace;fill:#fff;paint-order:stroke;stroke:#021a3a;stroke-linejoin:round;pointer-events:none}
 .item.teste .t::after{content:' TESTE';color:#ff4fd8;font-size:11px;letter-spacing:.1em}
+.item.manut .t::after{content:' MANUTENÇÃO';color:#ff6b5a;font-size:11px;letter-spacing:.1em}
+.ringm{animation:rg 1.4s ease-in-out infinite}
 .ring{animation:rg 1.4s ease-in-out infinite}@keyframes rg{50%{opacity:.25}}
 .outline{vector-effect:non-scaling-stroke}
 @media(max-width:900px){.app{grid-template-columns:1fr;grid-template-rows:auto 55vh 1fr}header{grid-column:1}.kpis{display:none}}
@@ -71,6 +73,7 @@ input{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--lin
 <div><span class="dot" style="background:#1ca4f2"></span>Passou pelo laboratório</div>
 <div><span class="dot" style="background:#f59f0a"></span>Substituto enviado</div>
 <div><span class="dot" style="background:transparent;border:2px dashed #ff4fd8"></span>SZ One em teste</div>
+<div><span class="dot" style="background:transparent;border:2px solid #ff6b5a"></span>Entrou em manutenção</div>
 </div>
 <div class="zoomctl"><button id="zin" aria-label="Aproximar">+</button><button id="zout" aria-label="Afastar">−</button><button id="zhome" aria-label="Brasil inteiro">⌂</button></div>
 <div class="hint">Clique numa região para aproximar · clique num ponto para ver as iscas</div>
@@ -108,6 +111,7 @@ let data;
 try{ data=await fetch('mapdata.json').then(r=>r.json()); }catch(e){ document.getElementById('list').textContent='Não foi possível carregar os dados.'; return; }
 const D=data.d.map(a=>({id:a[0],cust:a[1],lat:a[2],lon:a[3],rua:a[4],cid:a[5],ult:a[6],bat:a[7],h:a[8],pas:a[9]}));
 const TS=new Set(data.t||[]);D.forEach(d=>d.t=TS.has(d.id));
+const MS=new Set(data.m||[]);D.forEach(d=>d.m=MS.has(d.id));
 const CITIES=data.c.map(a=>({n:a[0],lat:a[1],lon:a[2],q:a[3]})).sort((a,b)=>b.q-a.q);
 const fmt=n=>n.toLocaleString('pt-BR');
 document.getElementById('kTot').textContent=fmt(D.length);
@@ -128,7 +132,7 @@ D.forEach(d=>{const k=d.lat.toFixed(3)+','+d.lon.toFixed(3);if(!gmap.has(k))gmap
 const G=[...gmap.values()].map(g=>{g.all=g.items;g.n=g.items.length;g.h=g.items.some(i=>i.h===2)?2:(g.items.some(i=>i.h===1)?1:0);return g}).sort((a,b)=>b.n-a.n);
 
 let FIL=null;
-const match=d=>FIL===null||(FIL===3?d.t:FIL===1?d.h>=1:d.h===FIL);
+const match=d=>FIL===null||(FIL===4?d.m:FIL===3?d.t:FIL===1?d.h>=1:d.h===FIL);
 const svg=d3.select('#map');
 const root=svg.append('g');
 // land dots
@@ -149,6 +153,7 @@ const pulse=root.append('circle').attr('fill','none').attr('stroke','#1ca4f2').a
 const pts=ptsG.selectAll('g').data(G).join('g').attr('transform',g=>`translate(${g.x},${g.y})`).style('cursor','pointer');
 pts.append('circle').attr('class','halo').attr('fill',g=>COL[g.h]).attr('fill-opacity',.22);
 pts.append('circle').attr('class','ring').attr('fill','none').attr('stroke','#ff4fd8').attr('stroke-dasharray','4 3');
+pts.append('circle').attr('class','ringm').attr('fill','none').attr('stroke','#ff6b5a');
 pts.append('circle').attr('class','core').attr('fill',g=>COL[g.h]).attr('stroke','#021a3a');
 pts.append('text').attr('class','cnt').attr('text-anchor','middle').attr('dy','.35em').attr('fill','#021a3a').style('font-family','Saira,sans-serif').style('font-weight',700).text(g=>g.n>1?g.n:'');
 pts.on('click',(ev,g)=>{ev.stopPropagation();selectGroup(g,true)});
@@ -165,6 +170,7 @@ function restyle(){
  const f=fit(),z=k/f;
  pts.select('.core').attr('stroke-width',1.2/k).attr('r',g=>(2.6+Math.sqrt(g.n)*1.1*(z<3?1.4:1))/k*f*1.6);
  pts.select('.ring').style('display',g=>g.items.some(i=>i.t)?null:'none').attr('stroke-width',2.2/k).attr('stroke-dasharray',`${4/k} ${3/k}`).attr('r',g=>(11+Math.sqrt(g.n)*2.6)/k*f*1.6);
+ pts.select('.ringm').style('display',g=>g.items.some(i=>i.m)?null:'none').attr('stroke-width',2.6/k).attr('r',g=>(15+Math.sqrt(g.n)*2.6)/k*f*1.6);
  pts.select('.halo').attr('r',g=>(5+Math.sqrt(g.n)*2.6)/k*f*1.6);
  pts.select('.cnt').style('font-size',g=>(Math.sqrt(g.n)*1.1+7)/k*f*1.6+'px').style('display',z>6?null:'none');
  const th=z<4?50:z<12?6:z<30?2:0;
@@ -182,11 +188,11 @@ function renderList(arr,title){
  arr=arr.slice().sort((a,b)=>a.cid.localeCompare(b.cid)||a.id.localeCompare(b.id));
  document.getElementById('listCount').textContent=arr.length>300?'mostrando 300 de '+fmt(arr.length):fmt(arr.length)+' iscas';
  const L=document.getElementById('list');L.innerHTML='';
- arr.slice(0,300).forEach(d=>{const el=document.createElement('div');el.className='item'+(d.t?' teste':'');el.innerHTML=`<span class="dot" style="background:${COL[d.h]}"></span><div><div class="t">${d.id}</div><div class="s">${d.cust} · ${d.cid}</div></div><div class="c">${d.ult.slice(8,10)}/${d.ult.slice(5,7)}</div>`;el.onclick=()=>selectItem(d);L.appendChild(el)});
+ arr.slice(0,300).forEach(d=>{const el=document.createElement('div');el.className='item'+(d.t?' teste':'')+(d.m?' manut':'');el.innerHTML=`<span class="dot" style="background:${COL[d.h]}"></span><div><div class="t">${d.id}</div><div class="s">${d.cust} · ${d.cid}</div></div><div class="c">${d.ult.slice(8,10)}/${d.ult.slice(5,7)}</div>`;el.onclick=()=>selectItem(d);L.appendChild(el)});
 }
 function showDetail(d){
  const el=document.getElementById('detail');el.style.display='block';
- el.innerHTML=`<div class="id">${d.id}</div><p><b>${d.cust}</b></p><p>${d.rua?d.rua+' · ':''}${d.cid}</p><p>Última comunicação: <b>${d.ult.slice(8,10)}/${d.ult.slice(5,7)}/${d.ult.slice(0,4)} ${d.ult.slice(11)}</b></p><p>Bateria interna: <b>${d.bat}%</b></p>${d.t?'<p style="color:#ff4fd8"><b style="color:#ff4fd8">SZ One em teste</b></p>':''}<p>${HIST[d.h]}${d.pas?` · <b>${d.pas}×</b>`:''}</p>`;
+ el.innerHTML=`<div class="id">${d.id}</div><p><b>${d.cust}</b></p><p>${d.rua?d.rua+' · ':''}${d.cid}</p><p>Última comunicação: <b>${d.ult.slice(8,10)}/${d.ult.slice(5,7)}/${d.ult.slice(0,4)} ${d.ult.slice(11)}</b></p><p>Bateria interna: <b>${d.bat}%</b></p>${d.m?'<p><b style="color:#ff6b5a">Entrou em manutenção</b></p>':''}${d.t?'<p style="color:#ff4fd8"><b style="color:#ff4fd8">SZ One em teste</b></p>':''}<p>${HIST[d.h]}${d.pas?` · <b>${d.pas}×</b>`:''}</p>`;
 }
 function ping(x,y){pulse.interrupt().attr('cx',x).attr('cy',y).attr('r',4/k).attr('opacity',1).transition().duration(1400).ease(d3.easeCubicOut).attr('r',40/k).attr('opacity',0)}
 function selectGroup(g,zoomIn){
@@ -216,9 +222,9 @@ function applyFilter(){
  pts.select('.cnt').text(g=>g.n>1?g.n:'');
  const cc={};D.forEach(d=>{if(match(d))cc[d.cid]=(cc[d.cid]||0)+1});CITIES.forEach(c=>{c.q=cc[c.n]||0});labels.text(c=>`${c.n} · ${c.q}`);
  restyle();selGroup=null;document.getElementById('detail').style.display='none';
- const arr=inView(lastT);renderList(arr,FIL===null?'Iscas nesta área':'Iscas nesta área · filtro');
+ const arr=inView(lastT);if(FIL===4&&!arr.length){renderList(arr,'Nenhuma isca em manutenção marcada ainda');return}renderList(arr,FIL===null?'Iscas nesta área':'Iscas nesta área · filtro');
 }
-const FS=[['Todas',null,D.length],['Nunca passou pelo laboratório',0,D.filter(d=>d.h===0).length],['Já passou pelo laboratório',1,D.filter(d=>d.h>=1).length],['Substituto enviado',2,D.filter(d=>d.h===2).length],['SZ One em teste',3,D.filter(d=>d.t).length]];
+const FS=[['Todas',null,D.length],['Nunca passou pelo laboratório',0,D.filter(d=>d.h===0).length],['Já passou pelo laboratório',1,D.filter(d=>d.h>=1).length],['Substituto enviado',2,D.filter(d=>d.h===2).length],['SZ One em teste',3,D.filter(d=>d.t).length],['Entrou em manutenção',4,D.filter(d=>d.m).length]];
 const fb=document.getElementById('filters');
 FS.forEach(([n,v,c],i)=>{const b=document.createElement('button');b.textContent=n+' · '+fmt(c);if(i===0)b.classList.add('on');b.onclick=()=>{[...fb.children].forEach(x=>x.classList.remove('on'));b.classList.add('on');FIL=v;applyFilter()};fb.appendChild(b)});
 
