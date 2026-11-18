@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mapa da base Braspress</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Zen+Dots&family=Saira:wght@500;600;700&family=Share+Tech&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<style>
+:root{--navy:#032c5f;--deep:#021a3a;--blue:#0059c8;--sky:#1ca4f2;--amber:#f59f0a;--muted:#b9c6d8;--line:#2e4766}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--deep);color:#fff;font-family:Inter,system-ui,sans-serif}
+.app{display:grid;grid-template-columns:1fr 400px;grid-template-rows:auto 1fr;height:100vh}
+header{grid-column:1/3;display:flex;align-items:center;justify-content:space-between;gap:24px;padding:16px 28px;background:linear-gradient(135deg,#0a3670,#032c5f 45%,#021a3a);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:baseline;gap:16px}
+.brand b{font-family:"Zen Dots",sans-serif;font-weight:400;font-size:26px;letter-spacing:.04em}
+.brand span{font-family:"Share Tech",monospace;color:var(--sky);letter-spacing:.16em;text-transform:uppercase;font-size:13px}
+.kpis{display:flex;gap:28px}
+.kpi{text-align:right}.kpi .v{font-family:Saira,sans-serif;font-weight:700;font-size:26px;line-height:1}.kpi .l{font-size:12px;color:var(--muted)}
+#mapwrap{position:relative;overflow:hidden;background:radial-gradient(circle at 60% 55%,#0a3670 0%,#032c5f 45%,#021a3a 100%)}
+svg{width:100%;height:100%;display:block;cursor:grab}
+svg:active{cursor:grabbing}
+.hint{position:absolute;left:20px;bottom:18px;font-family:"Share Tech",monospace;font-size:13px;letter-spacing:.08em;color:var(--muted);background:rgba(2,26,58,.7);padding:8px 12px;border-radius:10px;border:1px solid var(--line)}
+.legend{position:absolute;left:20px;top:18px;display:flex;flex-direction:column;gap:6px;font-size:13px;background:rgba(2,26,58,.7);padding:12px 14px;border-radius:12px;border:1px solid var(--line)}
+.legend div{display:flex;align-items:center;gap:8px}
+.dot{width:12px;height:12px;border-radius:50%;display:inline-block}
+.zoomctl{position:absolute;right:18px;top:18px;display:flex;flex-direction:column;gap:6px}
+.zoomctl button{width:40px;height:40px;border-radius:10px;border:1px solid var(--line);background:rgba(2,26,58,.85);color:#fff;font-size:20px;cursor:pointer}
+aside{background:#04224a;border-left:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+.sec{padding:16px 20px;border-bottom:1px solid var(--line)}
+.sec h3{margin:0 0 10px;font-family:"Share Tech",monospace;font-weight:400;font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--sky)}
+.regions{display:flex;flex-wrap:wrap;gap:8px}
+.regions button{font:500 13px Inter,sans-serif;color:#fff;background:#0d3a74;border:1px solid var(--line);border-radius:999px;padding:7px 13px;cursor:pointer;transition:background .2s}
+.regions button:hover,.regions button.on{background:var(--blue);border-color:var(--blue)}
+input{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:#021a3a;color:#fff;font:14px Inter,sans-serif}
+.view{display:flex;gap:18px}
+.view div{flex:1}.view .v{font-family:Saira,sans-serif;font-weight:700;font-size:24px}.view .l{font-size:12px;color:var(--muted)}
+#detail{display:none;background:#0d3a74;border:1px solid var(--sky);border-radius:14px;padding:14px;margin-top:4px;animation:pop .25s ease}
+@keyframes pop{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+#detail .id{font-family:"Share Tech",monospace;font-size:22px;color:#fff}
+#detail p{margin:4px 0;font-size:13px;color:var(--muted)}#detail p b{color:#fff;font-weight:500}
+.listhead{display:flex;justify-content:space-between;align-items:baseline}
+#list{flex:1;overflow:auto;padding:4px 12px 16px}
+.item{display:grid;grid-template-columns:12px 1fr auto;gap:10px;align-items:center;padding:8px;border-radius:10px;cursor:pointer}
+.item:hover,.item.sel{background:#0d3a74}
+.item .t{font-family:"Share Tech",monospace;font-size:15px}
+.item .s{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item .c{font-size:12px;color:var(--muted);text-align:right}
+.lbl{font-family:"Share Tech",monospace;fill:#fff;paint-order:stroke;stroke:#021a3a;stroke-linejoin:round;pointer-events:none}
+.item.teste .t::after{content:' TESTE';color:#ff4fd8;font-size:11px;letter-spacing:.1em}
+.ring{animation:rg 1.4s ease-in-out infinite}@keyframes rg{50%{opacity:.25}}
+.outline{vector-effect:non-scaling-stroke}
+@media(max-width:900px){.app{grid-template-columns:1fr;grid-template-rows:auto 55vh 1fr}header{grid-column:1}.kpis{display:none}}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+<div class="brand"><b>BRASPRESS</b><span>Base ativa · última posição de cada isca</span></div>
+<div class="kpis">
+<div class="kpi"><div class="v" id="kTot">–</div><div class="l">iscas na base</div></div>
+<div class="kpi"><div class="v" id="kUf">–</div><div class="l">estados</div></div>
+<div class="kpi"><div class="v" id="kNever">–</div><div class="l">sem passagem pelo laboratório</div></div>
+</div>
+</header>
+<div id="mapwrap">
+<svg id="map" role="img" aria-label="Mapa interativo do Brasil com a posição das iscas Braspress"></svg>
+<div class="legend">
+<div><span class="dot" style="background:#e8eef7"></span>Nunca passou pelo laboratório</div>
+<div><span class="dot" style="background:#1ca4f2"></span>Passou pelo laboratório</div>
+<div><span class="dot" style="background:#f59f0a"></span>Substituto enviado</div>
+<div><span class="dot" style="background:transparent;border:2px dashed #ff4fd8"></span>SZ One em teste</div>
+</div>
+<div class="zoomctl"><button id="zin" aria-label="Aproximar">+</button><button id="zout" aria-label="Afastar">−</button><button id="zhome" aria-label="Brasil inteiro">⌂</button></div>
+<div class="hint">Clique numa região para aproximar · clique num ponto para ver as iscas</div>
+</div>
+<aside>
+<div class="sec">
+<h3>Mostrar no mapa</h3>
+<div class="regions" id="filters"></div>
+</div>
+<div class="sec">
+<h3>Ir para a região</h3>
+<div class="regions" id="regions"></div>
+</div>
+<div class="sec">
+<h3>Buscar ID</h3>
+<input id="q" placeholder="Digite o ID, a cidade ou a customização" autocomplete="off">
+<div id="detail"></div>
+</div>
+<div class="sec">
+<div class="view">
+<div><div class="v" id="vN">–</div><div class="l">iscas nesta área</div></div>
+<div><div class="v" id="vC">–</div><div class="l">cidades</div></div>
+<div><div class="v" id="vM">–</div><div class="l">já passaram pelo lab.</div></div>
+</div>
+</div>
+<div class="sec listhead" style="border-bottom:none;padding-bottom:4px"><h3 id="listTitle" style="margin:0">Iscas nesta área</h3><span id="listCount" style="font-size:12px;color:var(--muted)"></span></div>
+<div id="list"></div>
+</aside>
+</div>
+<script>
+(async function(){
+const COL=['#e8eef7','#1ca4f2','#f59f0a'];
+const HIST=['Nunca passou pelo laboratório','Passou pelo laboratório','Substituto enviado na manutenção'];
+let data;
+try{ data=await fetch('mapdata.json').then(r=>r.json()); }catch(e){ document.getElementById('list').textContent='Não foi possível carregar os dados.'; return; }
+const D=data.d.map(a=>({id:a[0],cust:a[1],lat:a[2],lon:a[3],rua:a[4],cid:a[5],ult:a[6],bat:a[7],h:a[8],pas:a[9]}));
+const TS=new Set(data.t||[]);D.forEach(d=>d.t=TS.has(d.id));
+const CITIES=data.c.map(a=>({n:a[0],lat:a[1],lon:a[2],q:a[3]})).sort((a,b)=>b.q-a.q);
+const fmt=n=>n.toLocaleString('pt-BR');
+document.getElementById('kTot').textContent=fmt(D.length);
+if(data.gerado){const g=data.gerado;document.querySelector('.brand span').textContent='Sitalcom · atualizado em '+g.slice(8,10)+'/'+g.slice(5,7)+' às '+g.slice(11)}
+document.getElementById('kUf').textContent=new Set(D.map(d=>d.cid.slice(-3,-1))).size;
+document.getElementById('kNever').textContent=Math.round(100*D.filter(d=>d.h===0).length/D.length)+'%';
+
+const W=1000,H=1000,LON0=-74.2,LON1=-34.6,LAT0=-34,LAT1=5.6,K=Math.cos(-14*Math.PI/180);
+const S=Math.min((W-40)/((LON1-LON0)*K),(H-40)/(LAT1-LAT0));
+const OX=(W-(LON1-LON0)*K*S)/2,OY=(H-(LAT1-LAT0)*S)/2;
+const px=(lon,lat)=>[OX+(lon-LON0)*K*S,OY+(LAT1-lat)*S];
+D.forEach(d=>{[d.x,d.y]=px(d.lon,d.lat)});
+CITIES.forEach(c=>{[c.x,c.y]=px(c.lon,c.lat)});
+
+// group identical positions
+const gmap=new Map();
+D.forEach(d=>{const k=d.lat.toFixed(3)+','+d.lon.toFixed(3);if(!gmap.has(k))gmap.set(k,{x:d.x,y:d.y,items:[]});gmap.get(k).items.push(d)});
+const G=[...gmap.values()].map(g=>{g.all=g.items;g.n=g.items.length;g.h=g.items.some(i=>i.h===2)?2:(g.items.some(i=>i.h===1)?1:0);return g}).sort((a,b)=>b.n-a.n);
+
+let FIL=null;
+const match=d=>FIL===null||(FIL===3?d.t:FIL===1?d.h>=1:d.h===FIL);
+const svg=d3.select('#map');
+const root=svg.append('g');
+// land dots
+const outline=data.o.map(p=>px(p[0],p[1]));
+root.append('path').attr('d','M'+outline.map(p=>p.join(' ')).join('L')+'Z').attr('fill','#0d3a74').attr('fill-opacity',.45).attr('stroke','#4a8cda').attr('stroke-opacity',.6).attr('class','outline');
+const dotsG=root.append('g');
+const stG=root.append('g').style('pointer-events','none');
+(data.s||[]).forEach(e=>{const d=e[4].map(r=>{let o='M';for(let i=0;i<r.length;i+=2){const[x,y]=px(r[i],r[i+1]);o+=(i?'L':'')+x.toFixed(1)+' '+y.toFixed(1)}return o+'Z'}).join('');
+ stG.append('path').attr('d',d).attr('fill','none').attr('stroke','#7fb6ee').attr('stroke-opacity',.75).attr('stroke-linejoin','round').attr('class','outline');e.xy=px(e[2],e[3])});
+const stL=root.append('g').style('pointer-events','none');
+const stT=stL.selectAll('text').data(data.s||[]).join('text').attr('class','lbl').attr('text-anchor','middle').attr('x',e=>e.xy[0]).attr('y',e=>e.xy[1]).style('letter-spacing','.12em').style('text-transform','uppercase').attr('fill-opacity',.9);
+(function(){const poly=outline;function inside(x,y){let c=false;for(let i=0,j=poly.length-1;i<poly.length;j=i++){const[xi,yi]=poly[i],[xj,yj]=poly[j];if((yi>y)!=(yj>y)&&x<(xj-xi)*(y-yi)/(yj-yi)+xi)c=!c}return c}
+let s='';for(let y=6;y<H;y+=12)for(let x=6+((y/12|0)%2?6:0);x<W;x+=12)if(inside(x,y))s+=`M${x} ${y}h1.6v1.6h-1.6z`;dotsG.append('path').attr('d',s).attr('fill','#b9c6d8').attr('fill-opacity',.35)})();
+const labG=root.append('g');
+const ptsG=root.append('g');
+const pulse=root.append('circle').attr('fill','none').attr('stroke','#1ca4f2').attr('stroke-width',2).attr('opacity',0);
+
+const pts=ptsG.selectAll('g').data(G).join('g').attr('transform',g=>`translate(${g.x},${g.y})`).style('cursor','pointer');
+pts.append('circle').attr('class','halo').attr('fill',g=>COL[g.h]).attr('fill-opacity',.22);
+pts.append('circle').attr('class','ring').attr('fill','none').attr('stroke','#ff4fd8').attr('stroke-dasharray','4 3');
+pts.append('circle').attr('class','core').attr('fill',g=>COL[g.h]).attr('stroke','#021a3a');
+pts.append('text').attr('class','cnt').attr('text-anchor','middle').attr('dy','.35em').attr('fill','#021a3a').style('font-family','Saira,sans-serif').style('font-weight',700).text(g=>g.n>1?g.n:'');
+pts.on('click',(ev,g)=>{ev.stopPropagation();selectGroup(g,true)});
+
+const labels=labG.selectAll('text').data(CITIES).join('text').attr('class','lbl').attr('x',c=>c.x).attr('y',c=>c.y).text(c=>`${c.n} · ${c.q}`);
+
+let k=1;
+const zoom=d3.zoom().scaleExtent([1,600]).on('zoom',ev=>{k=ev.transform.k;root.attr('transform',ev.transform);restyle();updateView(ev.transform)});
+svg.call(zoom).on('dblclick.zoom',null);
+function fit(){const r=svg.node().getBoundingClientRect();return Math.min(r.width,r.height)/W}
+function toView(x,y,kk,dur=900){const r=svg.node().getBoundingClientRect();const t=d3.zoomIdentity.translate(r.width/2,r.height/2).scale(kk).translate(-x,-y);svg.transition().duration(dur).ease(d3.easeCubicInOut).call(zoom.transform,t)}
+function home(){const f=fit();toView(W/2,H/2,f)}
+function restyle(){
+ const f=fit(),z=k/f;
+ pts.select('.core').attr('stroke-width',1.2/k).attr('r',g=>(2.6+Math.sqrt(g.n)*1.1*(z<3?1.4:1))/k*f*1.6);
+ pts.select('.ring').style('display',g=>g.items.some(i=>i.t)?null:'none').attr('stroke-width',2.2/k).attr('stroke-dasharray',`${4/k} ${3/k}`).attr('r',g=>(11+Math.sqrt(g.n)*2.6)/k*f*1.6);
+ pts.select('.halo').attr('r',g=>(5+Math.sqrt(g.n)*2.6)/k*f*1.6);
+ pts.select('.cnt').style('font-size',g=>(Math.sqrt(g.n)*1.1+7)/k*f*1.6+'px').style('display',z>6?null:'none');
+ const th=z<4?50:z<12?6:z<30?2:0;
+ labels.attr('font-size',13/k).attr('stroke-width',3/k).attr('dx',9/k).attr('dy',-9/k).style('display',c=>c.q>=th?null:'none');
+ stT.text(e=>z<5?e[1]:e[0]).attr('font-size',(z<5?11:15)/k).attr('stroke-width',3/k).style('display',z<22?null:'none');
+ dotsG.attr('opacity',z<3?1:z<8?.4:0);
+ pulse.attr('stroke-width',2/k);
+}
+function inView(t){const r=svg.node().getBoundingClientRect();const x0=(0-t.x)/t.k,y0=(0-t.y)/t.k,x1=(r.width-t.x)/t.k,y1=(r.height-t.y)/t.k;return D.filter(d=>match(d)&&d.x>=x0&&d.x<=x1&&d.y>=y0&&d.y<=y1)}
+let selGroup=null,lastT=d3.zoomIdentity,tm;
+function updateView(t){lastT=t;clearTimeout(tm);tm=setTimeout(()=>{if(selGroup)return;renderList(inView(t),'Iscas nesta área')},120)}
+function stats(arr){document.getElementById('vN').textContent=fmt(arr.length);document.getElementById('vC').textContent=new Set(arr.map(d=>d.cid)).size;document.getElementById('vM').textContent=fmt(arr.filter(d=>d.h>0).length)}
+function renderList(arr,title){
+ stats(arr);document.getElementById('listTitle').textContent=title;
+ arr=arr.slice().sort((a,b)=>a.cid.localeCompare(b.cid)||a.id.localeCompare(b.id));
+ document.getElementById('listCount').textContent=arr.length>300?'mostrando 300 de '+fmt(arr.length):fmt(arr.length)+' iscas';
+ const L=document.getElementById('list');L.innerHTML='';
+ arr.slice(0,300).forEach(d=>{const el=document.createElement('div');el.className='item'+(d.t?' teste':'');el.innerHTML=`<span class="dot" style="background:${COL[d.h]}"></span><div><div class="t">${d.id}</div><div class="s">${d.cust} · ${d.cid}</div></div><div class="c">${d.ult.slice(8,10)}/${d.ult.slice(5,7)}</div>`;el.onclick=()=>selectItem(d);L.appendChild(el)});
+}
+function showDetail(d){
+ const el=document.getElementById('detail');el.style.display='block';
+ el.innerHTML=`<div class="id">${d.id}</div><p><b>${d.cust}</b></p><p>${d.rua?d.rua+' · ':''}${d.cid}</p><p>Última comunicação: <b>${d.ult.slice(8,10)}/${d.ult.slice(5,7)}/${d.ult.slice(0,4)} ${d.ult.slice(11)}</b></p><p>Bateria interna: <b>${d.bat}%</b></p>${d.t?'<p style="color:#ff4fd8"><b style="color:#ff4fd8">SZ One em teste</b></p>':''}<p>${HIST[d.h]}${d.pas?` · <b>${d.pas}×</b>`:''}</p>`;
+}
+function ping(x,y){pulse.interrupt().attr('cx',x).attr('cy',y).attr('r',4/k).attr('opacity',1).transition().duration(1400).ease(d3.easeCubicOut).attr('r',40/k).attr('opacity',0)}
+function selectGroup(g,zoomIn){
+ selGroup=g;const f=fit();const target=Math.max(k,f*60);
+ if(zoomIn)toView(g.x,g.y,target);ping(g.x,g.y);
+ renderList(g.items,g.n>1?`${g.n} iscas neste ponto`:'Isca selecionada');
+ if(g.n===1)showDetail(g.items[0]);else document.getElementById('detail').style.display='none';
+ setTimeout(()=>{selGroup=null},1200);
+}
+function selectItem(d){const f=fit();toView(d.x,d.y,Math.max(k,f*120));ping(d.x,d.y);showDetail(d);setTimeout(()=>ping(d.x,d.y),950)}
+svg.on('click',ev=>{const [x,y]=d3.pointer(ev,root.node());toView(x,y,Math.min(k*3.2,fit()*600),800)});
+d3.select('#zin').on('click',()=>svg.transition().duration(400).call(zoom.scaleBy,2));
+d3.select('#zout').on('click',()=>svg.transition().duration(400).call(zoom.scaleBy,.5));
+d3.select('#zhome').on('click',()=>{document.getElementById('detail').style.display='none';home()});
+
+const REG=[['Brasil',null],['Grande São Paulo',[-46.6,-23.55,16]],['Guarulhos',[-46.48,-23.45,60]],['Grande Rio',[-43.33,-22.82,22]],['Campinas e Vinhedo',[-47.0,-22.97,24]],['Sul',[-49.0,-26.8,4.5]],['Minas Gerais',[-44.2,-19.9,8]],['Nordeste',[-38.5,-9,2.8]]];
+const rb=document.getElementById('regions');
+REG.forEach(([n,v])=>{const b=document.createElement('button');b.textContent=n;b.onclick=()=>{[...rb.children].forEach(c=>c.classList.remove('on'));b.classList.add('on');document.getElementById('detail').style.display='none';if(!v)return home();const[x,y]=px(v[0],v[1]);toView(x,y,fit()*v[2],1100)};rb.appendChild(b)});
+
+document.getElementById('q').addEventListener('input',e=>{const q=e.target.value.trim().toLowerCase();if(!q){renderList(inView(lastT),'Iscas nesta área');return}
+ const r=D.filter(d=>match(d)&&(d.id.includes(q)||d.cid.toLowerCase().includes(q)||d.cust.toLowerCase().includes(q)));renderList(r,'Resultado da busca');if(r.length===1)selectItem(r[0])});
+
+function applyFilter(){
+ G.forEach(g=>{g.items=g.all.filter(match);g.n=g.items.length;g.h=g.n?(g.items.some(i=>i.h===2)?2:(g.items.some(i=>i.h===1)?1:0)):0});
+ pts.style('display',g=>g.n?null:'none');
+ pts.select('.core').attr('fill',g=>COL[g.h]);pts.select('.halo').attr('fill',g=>COL[g.h]);
+ pts.select('.cnt').text(g=>g.n>1?g.n:'');
+ const cc={};D.forEach(d=>{if(match(d))cc[d.cid]=(cc[d.cid]||0)+1});CITIES.forEach(c=>{c.q=cc[c.n]||0});labels.text(c=>`${c.n} · ${c.q}`);
+ restyle();selGroup=null;document.getElementById('detail').style.display='none';
+ const arr=inView(lastT);renderList(arr,FIL===null?'Iscas nesta área':'Iscas nesta área · filtro');
+}
+const FS=[['Todas',null,D.length],['Nunca passou pelo laboratório',0,D.filter(d=>d.h===0).length],['Já passou pelo laboratório',1,D.filter(d=>d.h>=1).length],['Substituto enviado',2,D.filter(d=>d.h===2).length],['SZ One em teste',3,D.filter(d=>d.t).length]];
+const fb=document.getElementById('filters');
+FS.forEach(([n,v,c],i)=>{const b=document.createElement('button');b.textContent=n+' · '+fmt(c);if(i===0)b.classList.add('on');b.onclick=()=>{[...fb.children].forEach(x=>x.classList.remove('on'));b.classList.add('on');FIL=v;applyFilter()};fb.appendChild(b)});
+
+home();
+window.addEventListener('resize',()=>home());
+// intro: start zoomed out slightly then settle
+svg.call(zoom.transform,d3.zoomIdentity.translate(svg.node().getBoundingClientRect().width/2,svg.node().getBoundingClientRect().height/2).scale(fit()*.6).translate(-W/2,-H/2));
+setTimeout(home,100);
+})();
+</script>
+</body>
+</html>

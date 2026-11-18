@@ -1,0 +1,4 @@
+MAPA BRASPRESS NO GITHUB PAGES
+Pasta publicada (publica) = index.html + mapdata.json. Nada de senha/.env aqui.
+Atualizar na hora:  python publicar_mapa.py   (na pasta smart-tag)
+A cada 30 min: tarefa agendada do Windows "Mapa Braspress" roda o mesmo comando.
