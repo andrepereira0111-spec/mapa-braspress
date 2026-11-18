@@ -54,7 +54,7 @@ input{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--lin
 .ring{animation:rg 1.4s ease-in-out infinite}@keyframes rg{50%{opacity:.25}}
 .mod{max-height:178px;overflow:auto}
 .mrow{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:6px 6px;border-radius:8px;cursor:pointer;font-size:13px}
-.mrow:hover{background:#0d3a74}
+.mrow:hover,.mrow.sel{background:#0d3a74}.mrow.sel{outline:1px solid var(--sky)}
 .mrow .n{font-weight:500}.mrow .c{font-family:Saira,sans-serif;font-weight:700;text-align:right}.mrow .c small{font-weight:500;color:var(--muted);font-size:11px}
 .mrow .bar{grid-column:1/3;height:4px;border-radius:3px;background:#0a2f62;overflow:hidden}.mrow .bar i{display:block;height:100%;background:#1ca4f2}
 .mtot{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:6px}
@@ -142,8 +142,8 @@ const gmap=new Map();
 D.forEach(d=>{const k=d.lat.toFixed(3)+','+d.lon.toFixed(3);if(!gmap.has(k))gmap.set(k,{x:d.x,y:d.y,items:[]});gmap.get(k).items.push(d)});
 const G=[...gmap.values()].map(g=>{g.all=g.items;g.n=g.items.length;g.h=g.items.some(i=>i.h===2)?2:(g.items.some(i=>i.h===1)?1:0);return g}).sort((a,b)=>b.n-a.n);
 
-let FIL=null;
-const match=d=>FIL===null||(FIL===4?d.m:FIL===3?d.t:FIL===1?d.h>=1:d.h===FIL);
+let FIL=null,MODEL=null;
+const match=d=>(MODEL===null||d.cust===MODEL)&&(FIL===null||(FIL===4?d.m:FIL===3?d.t:FIL===1?d.h>=1:d.h===FIL));
 const svg=d3.select('#map');
 const root=svg.append('g');
 // land dots
@@ -235,10 +235,10 @@ function applyFilter(){
  pts.select('.cnt').text(g=>g.n>1?g.n:'');
  const cc={};D.forEach(d=>{if(match(d))cc[d.cid]=(cc[d.cid]||0)+1});CITIES.forEach(c=>{c.q=cc[c.n]||0});labels.text(c=>`${c.n} · ${c.q}`);
  restyle();selGroup=null;document.getElementById('detail').style.display='none';
- const arr=inView(lastT);if(FIL===4&&!arr.length){renderList(arr,'Nenhuma isca em manutenção marcada ainda');return}renderList(arr,FIL===null?'Iscas nesta área':'Iscas nesta área · filtro');
+ const arr=inView(lastT);if(FIL===4&&!arr.length){renderList(arr,'Nenhuma isca em manutenção marcada ainda');return}renderList(arr,FIL===null?'Iscas nesta área':(MODEL?MODEL+' · voltaram':'Iscas nesta área · filtro'));
 }
 function zoomToFilter(){
- if(FIL===null)return home();
+ if(FIL===null&&MODEL===null)return home();
  const m=D.filter(match);if(!m.length)return home();
  const xs=m.map(d=>d.x),ys=m.map(d=>d.y);
  const x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys);
@@ -254,12 +254,17 @@ function zoomToFilter(){
  const box=document.getElementById('mods');
  L.forEach(m=>{const el=document.createElement('div');el.className='mrow';
   el.innerHTML=`<span class="n">${m.n}</span><span class="c">${m.v} <small>/ ${m.t}</small></span><span class="bar"><i style="width:${m.t?100*m.v/m.t:0}%"></i></span>`;
-  el.onclick=()=>{const b=document.getElementById('filters').children[2];if(b)b.click();const q=document.getElementById('q');q.value=m.n;q.dispatchEvent(new Event('input'))};
+  el.onclick=()=>{const fb=document.getElementById('filters').children;const on=MODEL!==m.n;
+   [...box.children].forEach(x=>x.classList.remove('sel'));
+   MODEL=on?m.n:null;FIL=on?1:null;
+   [...fb].forEach((x,i)=>x.classList.toggle('on',i===(on?2:0)));
+   if(on)el.classList.add('sel');
+   document.getElementById('q').value='';applyFilter();setTimeout(zoomToFilter,60)};
   box.appendChild(el)});
 })();
 const FS=[['Todas',null,D.length],['Nunca passou pelo laboratório',0,D.filter(d=>d.h===0).length],['Já passou pelo laboratório',1,D.filter(d=>d.h>=1).length],['Substituto enviado',2,D.filter(d=>d.h===2).length],['SZ One em teste',3,D.filter(d=>d.t).length],['Entrou em manutenção',4,D.filter(d=>d.m).length]];
 const fb=document.getElementById('filters');
-FS.forEach(([n,v,c],i)=>{const b=document.createElement('button');b.textContent=n+' · '+fmt(c);if(i===0)b.classList.add('on');b.onclick=()=>{[...fb.children].forEach(x=>x.classList.remove('on'));b.classList.add('on');FIL=v;applyFilter();setTimeout(zoomToFilter,60)};fb.appendChild(b)});
+FS.forEach(([n,v,c],i)=>{const b=document.createElement('button');b.textContent=n+' · '+fmt(c);if(i===0)b.classList.add('on');b.onclick=()=>{[...fb.children].forEach(x=>x.classList.remove('on'));b.classList.add('on');FIL=v;MODEL=null;document.querySelectorAll('.mrow.sel').forEach(x=>x.classList.remove('sel'));applyFilter();setTimeout(zoomToFilter,60)};fb.appendChild(b)});
 
 home();
 window.addEventListener('resize',()=>home());
