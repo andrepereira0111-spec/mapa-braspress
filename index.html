@@ -45,8 +45,8 @@ input{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--lin
 #detail .id{font-family:"Share Tech",monospace;font-size:22px;color:#fff}
 #detail p{margin:4px 0;font-size:13px;color:var(--muted)}#detail p b{color:#fff;font-weight:500}
 .listhead{display:flex;justify-content:space-between;align-items:baseline}
-#menu{flex:0 1 auto;max-height:42%;overflow:auto;border-bottom:1px solid var(--line)}
-#list{flex:1;min-height:220px;overflow:auto;padding:4px 12px 16px}
+#menu{flex:1;overflow:auto}#rpanel{position:absolute;right:0;top:0;bottom:0;width:min(340px,90vw);z-index:6;background:#04224a;border-left:1px solid var(--line);display:none;flex-direction:column;min-height:0}#rpanel.open{display:flex}.app.rp .zoomctl{right:calc(min(340px,90vw) + 18px)}
+#list{flex:1;min-height:0;overflow:auto;padding:4px 12px 16px}
 .item{display:grid;grid-template-columns:12px 1fr auto;gap:10px;align-items:center;padding:8px;border-radius:10px;cursor:pointer}
 .item:hover,.item.sel{background:#0d3a74}
 .item .t{font-family:"Share Tech",monospace;font-size:15px}
@@ -86,6 +86,10 @@ input{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--lin
 <div><span class="dot" style="background:transparent;border:2px dashed #ff4fd8"></span>SZ One em teste</div>
 <div><span class="dot" style="background:transparent;border:2px solid #ff6b5a"></span>Entrou em manutenção</div>
 </div>
+<div id="rpanel">
+<div class="sec listhead" style="border-bottom:none;padding-bottom:4px"><h3 id="listTitle" style="margin:0">Iscas nesta área</h3><span id="listCount" style="font-size:12px;color:var(--muted);margin-left:auto;margin-right:10px"></span><button id="rclose" aria-label="Fechar lista" style="width:30px;height:30px;border-radius:8px;border:1px solid var(--line);background:#0d3a74;color:#fff;font-size:18px;cursor:pointer">×</button></div>
+<div id="list"></div>
+</div>
 <button id="tab" aria-label="Mostrar ou esconder o menu" title="Menu">›</button>
 <button id="stale" title="Iscas que pararam de posicionar há mais de 3 dias"></button>
 <div class="zoomctl"><button id="zin" aria-label="Aproximar">+</button><button id="zout" aria-label="Afastar">−</button><button id="zhome" aria-label="Brasil inteiro">⌂</button></div>
@@ -119,8 +123,6 @@ input{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--lin
 <div class="mod" id="mods"></div>
 </div>
 </div>
-<div class="sec listhead" style="border-bottom:none;padding-bottom:4px"><h3 id="listTitle" style="margin:0">Iscas nesta área</h3><span id="listCount" style="font-size:12px;color:var(--muted)"></span></div>
-<div id="list"></div>
 </aside>
 </div>
 <script>
@@ -239,6 +241,7 @@ function showDetail(d){
 }
 function ping(x,y){pulse.interrupt().attr('cx',x).attr('cy',y).attr('r',4/k).attr('opacity',1).transition().duration(1400).ease(d3.easeCubicOut).attr('r',40/k).attr('opacity',0)}
 function selectGroup(g,zoomIn){
+ openR();
  selGroup=g;const f=fit();const target=Math.max(k,f*60);
  if(zoomIn)toView(g.x,g.y,target);ping(g.x,g.y);
  renderList(g.items,g.n>1?`${g.n} iscas neste ponto`:'Isca selecionada');
@@ -253,9 +256,9 @@ d3.select('#zhome').on('click',()=>{document.getElementById('detail').style.disp
 
 const REG=[['Brasil',null],['Grande São Paulo',[-46.6,-23.55,16]],['Guarulhos',[-46.48,-23.45,60]],['Grande Rio',[-43.33,-22.82,22]],['Campinas e Vinhedo',[-47.0,-22.97,24]],['Sul',[-49.0,-26.8,4.5]],['Minas Gerais',[-44.2,-19.9,8]],['Nordeste',[-38.5,-9,2.8]]];
 const rb=document.getElementById('regions');
-REG.forEach(([n,v])=>{const b=document.createElement('button');b.textContent=n;b.onclick=()=>{[...rb.children].forEach(c=>c.classList.remove('on'));b.classList.add('on');document.getElementById('detail').style.display='none';if(!v)return home();const[x,y]=px(v[0],v[1]);toView(x,y,fit()*v[2],1100)};rb.appendChild(b)});
+REG.forEach(([n,v])=>{const b=document.createElement('button');b.textContent=n;b.onclick=()=>{closeMenu();openR();[...rb.children].forEach(c=>c.classList.remove('on'));b.classList.add('on');document.getElementById('detail').style.display='none';if(!v)return home();const[x,y]=px(v[0],v[1]);toView(x,y,fit()*v[2],1100)};rb.appendChild(b)});
 
-document.getElementById('q').addEventListener('input',e=>{const q=e.target.value.trim().toLowerCase();if(!q){renderList(inView(lastT),'Iscas nesta área');return}
+document.getElementById('q').addEventListener('input',e=>{openR();const q=e.target.value.trim().toLowerCase();if(!q){renderList(inView(lastT),'Iscas nesta área');return}
  const r=D.filter(d=>match(d)&&(d.id.includes(q)||d.cid.toLowerCase().includes(q)||d.cust.toLowerCase().includes(q)));renderList(r,'Resultado da busca');if(r.length===1)selectItem(r[0])});
 
 function applyFilter(){
@@ -284,7 +287,7 @@ function zoomToFilter(){
  const box=document.getElementById('mods');
  L.forEach(m=>{const el=document.createElement('div');el.className='mrow';
   el.innerHTML=`<span class="n">${m.n}</span><span class="c">${m.v} <small>/ ${m.t}</small></span><span class="bar"><i style="width:${m.t?100*m.v/m.t:0}%"></i></span>`;
-  el.onclick=()=>{const fb=document.getElementById('filters').children;const on=MODEL!==m.n;
+  el.onclick=()=>{closeMenu();openR();const fb=document.getElementById('filters').children;const on=MODEL!==m.n;
    [...box.children].forEach(x=>x.classList.remove('sel'));
    MODEL=on?m.n:null;FIL=on?1:null;
    [...fb].forEach((x,i)=>x.classList.toggle('on',i===(on?2:0)));
@@ -294,8 +297,11 @@ function zoomToFilter(){
 })();
 const FS=[['Todas',null,D.length],['Nunca passou pelo laboratório',0,D.filter(d=>d.h===0).length],['Já passou pelo laboratório',1,D.filter(d=>d.h>=1).length],['Substituto enviado',2,D.filter(d=>d.h===2).length],['SZ One em teste',3,D.filter(d=>d.t).length],['Entrou em manutenção',4,D.filter(d=>d.m).length],['Sem posição há +3 dias',5,D.filter(d=>d.sp).length]];
 const fb=document.getElementById('filters');
-FS.forEach(([n,v,c],i)=>{const b=document.createElement('button');b.textContent=n+' · '+fmt(c);if(i===0)b.classList.add('on');b.onclick=()=>{[...fb.children].forEach(x=>x.classList.remove('on'));b.classList.add('on');FIL=v;MODEL=null;document.querySelectorAll('.mrow.sel').forEach(x=>x.classList.remove('sel'));applyFilter();setTimeout(zoomToFilter,60)};fb.appendChild(b)});
+FS.forEach(([n,v,c],i)=>{const b=document.createElement('button');b.textContent=n+' · '+fmt(c);if(i===0)b.classList.add('on');b.onclick=()=>{closeMenu();openR();[...fb.children].forEach(x=>x.classList.remove('on'));b.classList.add('on');FIL=v;MODEL=null;document.querySelectorAll('.mrow.sel').forEach(x=>x.classList.remove('sel'));applyFilter();setTimeout(zoomToFilter,60)};fb.appendChild(b)});
 
+function openR(){document.getElementById('rpanel').classList.add('open');document.querySelector('.app').classList.add('rp')}
+function closeMenu(){document.querySelector('.app').classList.add('closed');document.getElementById('tab').textContent='›'}
+document.getElementById('rclose').onclick=()=>{document.getElementById('rpanel').classList.remove('open');document.querySelector('.app').classList.remove('rp')};
 document.getElementById('tab').onclick=ev=>{ev.stopPropagation();const a=document.querySelector('.app');a.classList.toggle('closed');ev.target.textContent=a.classList.contains('closed')?'›':'‹';setTimeout(()=>home(),60)};
 document.getElementById('stale').textContent='⚠ Sem posição há +3 dias · '+D.filter(d=>d.sp).length;
 document.getElementById('stale').onclick=ev=>{ev.stopPropagation();fb.children[FIL===5?0:6].click()};
