@@ -25,6 +25,8 @@ svg:active{cursor:grabbing}
 .legend{position:absolute;left:20px;top:18px;display:flex;flex-direction:column;gap:6px;font-size:13px;background:rgba(2,26,58,.7);padding:12px 14px;border-radius:12px;border:1px solid var(--line)}
 .legend div{display:flex;align-items:center;gap:8px}
 .dot{width:12px;height:12px;border-radius:50%;display:inline-block}
+.app.closed{grid-template-columns:0 1fr}.app.closed aside{border-right:0}
+#tab{position:absolute;left:0;top:50%;transform:translateY(-50%);z-index:5;width:26px;height:96px;border:1px solid var(--line);border-left:0;border-radius:0 12px 12px 0;background:rgba(2,26,58,.88);color:#fff;font-size:20px;cursor:pointer}#tab:hover{background:var(--blue)}
 .zoomctl{position:absolute;right:18px;top:18px;display:flex;flex-direction:column;gap:6px}
 .zoomctl button{width:40px;height:40px;border-radius:10px;border:1px solid var(--line);background:rgba(2,26,58,.85);color:#fff;font-size:20px;cursor:pointer}
 aside{grid-column:1;grid-row:2;background:#04224a;border-right:1px solid var(--line);overflow:hidden;display:flex;flex-direction:column;min-height:0}
@@ -82,6 +84,7 @@ input{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--lin
 <div><span class="dot" style="background:transparent;border:2px dashed #ff4fd8"></span>SZ One em teste</div>
 <div><span class="dot" style="background:transparent;border:2px solid #ff6b5a"></span>Entrou em manutenção</div>
 </div>
+<button id="tab" aria-label="Mostrar ou esconder o menu" title="Menu">‹</button>
 <div class="zoomctl"><button id="zin" aria-label="Aproximar">+</button><button id="zout" aria-label="Afastar">−</button><button id="zhome" aria-label="Brasil inteiro">⌂</button></div>
 <div class="hint">Clique numa região para aproximar · clique num ponto para ver as iscas</div>
 </div>
@@ -290,6 +293,7 @@ const FS=[['Todas',null,D.length],['Nunca passou pelo laboratório',0,D.filter(d
 const fb=document.getElementById('filters');
 FS.forEach(([n,v,c],i)=>{const b=document.createElement('button');b.textContent=n+' · '+fmt(c);if(i===0)b.classList.add('on');b.onclick=()=>{[...fb.children].forEach(x=>x.classList.remove('on'));b.classList.add('on');FIL=v;MODEL=null;document.querySelectorAll('.mrow.sel').forEach(x=>x.classList.remove('sel'));applyFilter();setTimeout(zoomToFilter,60)};fb.appendChild(b)});
 
+document.getElementById('tab').onclick=ev=>{ev.stopPropagation();const a=document.querySelector('.app');a.classList.toggle('closed');ev.target.textContent=a.classList.contains('closed')?'›':'‹';setTimeout(()=>home(),60)};
 home();
 window.addEventListener('resize',()=>home());
 // intro: start zoomed out slightly then settle
