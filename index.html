@@ -11,14 +11,14 @@
 :root{--navy:#032c5f;--deep:#021a3a;--blue:#0059c8;--sky:#1ca4f2;--amber:#f59f0a;--muted:#b9c6d8;--line:#2e4766}
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;background:var(--deep);color:#fff;font-family:Inter,system-ui,sans-serif}
-.app{display:grid;grid-template-columns:1fr 400px;grid-template-rows:auto 1fr;height:100vh}
+.app{display:grid;grid-template-columns:400px 1fr;grid-template-rows:auto 1fr;height:100vh}
 header{grid-column:1/3;display:flex;align-items:center;justify-content:space-between;gap:24px;padding:16px 28px;background:linear-gradient(135deg,#0a3670,#032c5f 45%,#021a3a);border-bottom:1px solid var(--line)}
 .brand{display:flex;align-items:baseline;gap:16px}
 .brand b{font-family:"Zen Dots",sans-serif;font-weight:400;font-size:26px;letter-spacing:.04em}
 .brand span{font-family:"Share Tech",monospace;color:var(--sky);letter-spacing:.16em;text-transform:uppercase;font-size:13px}
 .kpis{display:flex;gap:28px}
 .kpi{text-align:right}.kpi .v{font-family:Saira,sans-serif;font-weight:700;font-size:26px;line-height:1}.kpi .l{font-size:12px;color:var(--muted)}
-#mapwrap{position:relative;overflow:hidden;background:radial-gradient(circle at 60% 55%,#0a3670 0%,#032c5f 45%,#021a3a 100%)}
+#mapwrap{grid-column:2;grid-row:2;position:relative;overflow:hidden;background:radial-gradient(circle at 60% 55%,#0a3670 0%,#032c5f 45%,#021a3a 100%)}
 svg{width:100%;height:100%;display:block;cursor:grab}
 svg:active{cursor:grabbing}
 .hint{position:absolute;left:20px;bottom:18px;font-family:"Share Tech",monospace;font-size:13px;letter-spacing:.08em;color:var(--muted);background:rgba(2,26,58,.7);padding:8px 12px;border-radius:10px;border:1px solid var(--line)}
@@ -27,7 +27,7 @@ svg:active{cursor:grabbing}
 .dot{width:12px;height:12px;border-radius:50%;display:inline-block}
 .zoomctl{position:absolute;right:18px;top:18px;display:flex;flex-direction:column;gap:6px}
 .zoomctl button{width:40px;height:40px;border-radius:10px;border:1px solid var(--line);background:rgba(2,26,58,.85);color:#fff;font-size:20px;cursor:pointer}
-aside{background:#04224a;border-left:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+aside{grid-column:1;grid-row:2;background:#04224a;border-right:1px solid var(--line);overflow:hidden;display:flex;flex-direction:column;min-height:0}
 .sec{padding:16px 20px;border-bottom:1px solid var(--line)}
 .sec h3{margin:0 0 10px;font-family:"Share Tech",monospace;font-weight:400;font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--sky)}
 .regions{display:flex;flex-wrap:wrap;gap:8px}
@@ -41,7 +41,8 @@ input{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--lin
 #detail .id{font-family:"Share Tech",monospace;font-size:22px;color:#fff}
 #detail p{margin:4px 0;font-size:13px;color:var(--muted)}#detail p b{color:#fff;font-weight:500}
 .listhead{display:flex;justify-content:space-between;align-items:baseline}
-#list{flex:1;overflow:auto;padding:4px 12px 16px}
+#menu{flex:0 1 auto;max-height:42%;overflow:auto;border-bottom:1px solid var(--line)}
+#list{flex:1;min-height:220px;overflow:auto;padding:4px 12px 16px}
 .item{display:grid;grid-template-columns:12px 1fr auto;gap:10px;align-items:center;padding:8px;border-radius:10px;cursor:pointer}
 .item:hover,.item.sel{background:#0d3a74}
 .item .t{font-family:"Share Tech",monospace;font-size:15px}
@@ -59,7 +60,7 @@ input{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--lin
 .mrow .bar{grid-column:1/3;height:4px;border-radius:3px;background:#0a2f62;overflow:hidden}.mrow .bar i{display:block;height:100%;background:#1ca4f2}
 .mtot{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:6px}
 .outline{vector-effect:non-scaling-stroke}
-@media(max-width:900px){.app{grid-template-columns:1fr;grid-template-rows:auto 55vh 1fr}header{grid-column:1}.kpis{display:none}}
+@media(max-width:900px){.app{grid-template-columns:1fr;grid-template-rows:auto 55vh 1fr}header{grid-column:1}#mapwrap,aside{grid-column:1}#mapwrap{grid-row:2}aside{grid-row:3}.kpis{display:none}}
 </style>
 </head>
 <body>
@@ -85,6 +86,7 @@ input{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--lin
 <div class="hint">Clique numa região para aproximar · clique num ponto para ver as iscas</div>
 </div>
 <aside>
+<div id="menu">
 <div class="sec">
 <h3>Mostrar no mapa</h3>
 <div class="regions" id="filters"></div>
@@ -109,6 +111,7 @@ input{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--lin
 <h3>Voltaram por modelo</h3>
 <div class="mtot"><span id="mTot"></span><span>voltaram / total</span></div>
 <div class="mod" id="mods"></div>
+</div>
 </div>
 <div class="sec listhead" style="border-bottom:none;padding-bottom:4px"><h3 id="listTitle" style="margin:0">Iscas nesta área</h3><span id="listCount" style="font-size:12px;color:var(--muted)"></span></div>
 <div id="list"></div>
