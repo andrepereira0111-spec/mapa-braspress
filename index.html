@@ -298,7 +298,7 @@ FS.forEach(([n,v,c],i)=>{const b=document.createElement('button');b.textContent=
 
 document.getElementById('tab').onclick=ev=>{ev.stopPropagation();const a=document.querySelector('.app');a.classList.toggle('closed');ev.target.textContent=a.classList.contains('closed')?'›':'‹';setTimeout(()=>home(),60)};
 document.getElementById('stale').textContent='⚠ Sem posição há +3 dias · '+D.filter(d=>d.sp).length;
-document.getElementById('stale').onclick=ev=>{ev.stopPropagation();fb.children[FIL===5?0:5].click()};
+document.getElementById('stale').onclick=ev=>{ev.stopPropagation();fb.children[FIL===5?0:6].click()};
 home();
 window.addEventListener('resize',()=>home());
 // intro: start zoomed out slightly then settle
