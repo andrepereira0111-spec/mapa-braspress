@@ -268,7 +268,7 @@ function applyFilter(){
  pts.select('.cnt').text(g=>g.n>1?g.n:'');
  const cc={};D.forEach(d=>{if(match(d))cc[d.cid]=(cc[d.cid]||0)+1});CITIES.forEach(c=>{c.q=cc[c.n]||0});labels.text(c=>`${c.n} · ${c.q}`);
  restyle();selGroup=null;document.getElementById('detail').style.display='none';
- const arr=inView(lastT);if(FIL===5&&!arr.length){renderList(arr,'Nenhuma isca sem posição há mais de 3 dias');return}if(FIL===4&&!arr.length){renderList(arr,'Nenhuma isca em manutenção marcada ainda');return}renderList(arr,FIL===null?'Iscas nesta área':(MODEL?MODEL+' · voltaram':FIL===5?'Sem posição há mais de 3 dias':'Iscas nesta área · filtro'));
+ const arr=(FIL!==null||MODEL!==null)?D.filter(match):inView(lastT);if(FIL===5&&!arr.length){renderList(arr,'Nenhuma isca sem posição há mais de 3 dias');return}if(FIL===4&&!arr.length){renderList(arr,'Nenhuma isca em manutenção marcada ainda');return}renderList(arr,FIL===null?'Iscas nesta área':(MODEL?MODEL+' · voltaram':FIL===5?'Sem posição há mais de 3 dias':'Iscas nesta área · filtro'));
 }
 function zoomToFilter(){
  if(FIL===null&&MODEL===null)return home();
