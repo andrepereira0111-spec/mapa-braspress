@@ -142,6 +142,8 @@ while(!data){
 const D=data.d.map(a=>({id:a[0],cust:a[1],lat:a[2],lon:a[3],rua:a[4],cid:a[5],ult:a[6],bat:a[7],h:a[8],pas:a[9]}));
 const TS=new Set(data.t||[]);D.forEach(d=>d.t=TS.has(d.id));
 const MS=new Set(data.m||[]);D.forEach(d=>d.m=MS.has(d.id));
+const REF=new Date((data.gerado||new Date().toISOString().slice(0,16)).replace(' ','T')).getTime();
+D.forEach(d=>{const u=new Date(d.ult.replace(' ','T')).getTime();d.dias=isNaN(u)||d.ult.startsWith('0000')?999:(REF-u)/864e5;d.sp=d.dias>3});
 const CITIES=data.c.map(a=>({n:a[0],lat:a[1],lon:a[2],q:a[3]})).sort((a,b)=>b.q-a.q);
 const fmt=n=>n.toLocaleString('pt-BR');
 document.getElementById('kTot').textContent=fmt(D.length);
@@ -162,7 +164,7 @@ D.forEach(d=>{const k=d.lat.toFixed(3)+','+d.lon.toFixed(3);if(!gmap.has(k))gmap
 const G=[...gmap.values()].map(g=>{g.all=g.items;g.n=g.items.length;g.h=g.items.some(i=>i.h===2)?2:(g.items.some(i=>i.h===1)?1:0);return g}).sort((a,b)=>b.n-a.n);
 
 let FIL=null,MODEL=null;
-const match=d=>(MODEL===null||d.cust===MODEL)&&(FIL===null||(FIL===4?d.m:FIL===3?d.t:FIL===1?d.h>=1:d.h===FIL));
+const match=d=>(MODEL===null||d.cust===MODEL)&&(FIL===null||(FIL===5?d.sp:FIL===4?d.m:FIL===3?d.t:FIL===1?d.h>=1:d.h===FIL));
 const svg=d3.select('#map');
 const root=svg.append('g');
 // land dots
@@ -220,11 +222,11 @@ function renderList(arr,title){
  arr=arr.slice().sort((a,b)=>a.cid.localeCompare(b.cid)||a.id.localeCompare(b.id));
  document.getElementById('listCount').textContent=arr.length>300?'mostrando 300 de '+fmt(arr.length):fmt(arr.length)+' iscas';
  const L=document.getElementById('list');L.innerHTML='';
- arr.slice(0,300).forEach(d=>{const el=document.createElement('div');el.className='item'+(d.t?' teste':'')+(d.m?' manut':'');el.innerHTML=`<span class="dot" style="background:${COL[d.h]}"></span><div><div class="t">${d.id}</div><div class="s">${d.cust} · ${d.cid}</div></div><div class="c">${d.ult.slice(8,10)}/${d.ult.slice(5,7)}</div>`;el.onclick=()=>selectItem(d);L.appendChild(el)});
+ arr.slice(0,300).forEach(d=>{const el=document.createElement('div');el.className='item'+(d.t?' teste':'')+(d.m?' manut':'');el.innerHTML=`<span class="dot" style="background:${COL[d.h]}"></span><div><div class="t">${d.id}</div><div class="s">${d.cust} · ${d.cid}</div></div><div class="c">${d.ult.slice(8,10)}/${d.ult.slice(5,7)}${d.sp?`<br><b style="color:#ff6b5a">${d.dias>=999?'sem dado':Math.floor(d.dias)+' dias'}</b>`:''}</div>`;el.onclick=()=>selectItem(d);L.appendChild(el)});
 }
 function showDetail(d){
  const el=document.getElementById('detail');el.style.display='block';
- el.innerHTML=`<div class="id">${d.id}</div><p><b>${d.cust}</b></p><p>${d.rua?d.rua+' · ':''}${d.cid}</p><p>Última comunicação: <b>${d.ult.slice(8,10)}/${d.ult.slice(5,7)}/${d.ult.slice(0,4)} ${d.ult.slice(11)}</b></p><p>Bateria interna: <b>${d.bat}%</b></p>${d.m?'<p><b style="color:#ff6b5a">Entrou em manutenção</b></p>':''}${d.t?'<p style="color:#ff4fd8"><b style="color:#ff4fd8">SZ One em teste</b></p>':''}<p>${HIST[d.h]}${d.pas?` · <b>${d.pas}×</b>`:''}</p>`;
+ el.innerHTML=`<div class="id">${d.id}</div><p><b>${d.cust}</b></p><p>${d.rua?d.rua+' · ':''}${d.cid}</p><p>Última comunicação: <b>${d.ult.slice(8,10)}/${d.ult.slice(5,7)}/${d.ult.slice(0,4)} ${d.ult.slice(11)}</b></p><p>Bateria interna: <b>${d.bat}%</b></p>${d.sp?`<p><b style="color:#ff6b5a">Sem posição há ${d.dias>=999?'muito tempo':Math.floor(d.dias)+' dias'}</b></p>`:''}${d.m?'<p><b style="color:#ff6b5a">Entrou em manutenção</b></p>':''}${d.t?'<p style="color:#ff4fd8"><b style="color:#ff4fd8">SZ One em teste</b></p>':''}<p>${HIST[d.h]}${d.pas?` · <b>${d.pas}×</b>`:''}</p>`;
 }
 function ping(x,y){pulse.interrupt().attr('cx',x).attr('cy',y).attr('r',4/k).attr('opacity',1).transition().duration(1400).ease(d3.easeCubicOut).attr('r',40/k).attr('opacity',0)}
 function selectGroup(g,zoomIn){
@@ -254,7 +256,7 @@ function applyFilter(){
  pts.select('.cnt').text(g=>g.n>1?g.n:'');
  const cc={};D.forEach(d=>{if(match(d))cc[d.cid]=(cc[d.cid]||0)+1});CITIES.forEach(c=>{c.q=cc[c.n]||0});labels.text(c=>`${c.n} · ${c.q}`);
  restyle();selGroup=null;document.getElementById('detail').style.display='none';
- const arr=inView(lastT);if(FIL===4&&!arr.length){renderList(arr,'Nenhuma isca em manutenção marcada ainda');return}renderList(arr,FIL===null?'Iscas nesta área':(MODEL?MODEL+' · voltaram':'Iscas nesta área · filtro'));
+ const arr=inView(lastT);if(FIL===5&&!arr.length){renderList(arr,'Nenhuma isca sem posição há mais de 3 dias');return}if(FIL===4&&!arr.length){renderList(arr,'Nenhuma isca em manutenção marcada ainda');return}renderList(arr,FIL===null?'Iscas nesta área':(MODEL?MODEL+' · voltaram':FIL===5?'Sem posição há mais de 3 dias':'Iscas nesta área · filtro'));
 }
 function zoomToFilter(){
  if(FIL===null&&MODEL===null)return home();
@@ -281,7 +283,7 @@ function zoomToFilter(){
    document.getElementById('q').value='';applyFilter();setTimeout(zoomToFilter,60)};
   box.appendChild(el)});
 })();
-const FS=[['Todas',null,D.length],['Nunca passou pelo laboratório',0,D.filter(d=>d.h===0).length],['Já passou pelo laboratório',1,D.filter(d=>d.h>=1).length],['Substituto enviado',2,D.filter(d=>d.h===2).length],['SZ One em teste',3,D.filter(d=>d.t).length],['Entrou em manutenção',4,D.filter(d=>d.m).length]];
+const FS=[['Todas',null,D.length],['Nunca passou pelo laboratório',0,D.filter(d=>d.h===0).length],['Já passou pelo laboratório',1,D.filter(d=>d.h>=1).length],['Substituto enviado',2,D.filter(d=>d.h===2).length],['SZ One em teste',3,D.filter(d=>d.t).length],['Entrou em manutenção',4,D.filter(d=>d.m).length],['Sem posição há +3 dias',5,D.filter(d=>d.sp).length]];
 const fb=document.getElementById('filters');
 FS.forEach(([n,v,c],i)=>{const b=document.createElement('button');b.textContent=n+' · '+fmt(c);if(i===0)b.classList.add('on');b.onclick=()=>{[...fb.children].forEach(x=>x.classList.remove('on'));b.classList.add('on');FIL=v;MODEL=null;document.querySelectorAll('.mrow.sel').forEach(x=>x.classList.remove('sel'));applyFilter();setTimeout(zoomToFilter,60)};fb.appendChild(b)});
 
