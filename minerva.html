@@ -5,8 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Pedido 4450 · Minerva Rolim de Moura</title>
 <link href="https://fonts.googleapis.com/css2?family=Zen+Dots&family=Saira:wght@500;600;700&family=Share+Tech&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
 <style>
 :root{--navy:#032c5f;--deep:#021a3a;--blue:#0059c8;--sky:#1ca4f2;--amber:#f59f0a;--muted:#b9c6d8;--line:#2e4766;--ok:#2fd37b;--bad:#ff4d4d}
 *{box-sizing:border-box}
@@ -20,21 +19,7 @@ header{grid-column:1/3;display:flex;align-items:center;justify-content:space-bet
 .kpi{text-align:right}.kpi .v{font-family:Saira,sans-serif;font-weight:700;font-size:26px;line-height:1}.kpi .l{font-size:12px;color:var(--muted)}
 aside{grid-column:1;grid-row:2;background:#04224a;border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0;overflow:hidden}
 #mapwrap{grid-column:2;grid-row:2;position:relative;overflow:hidden;background:radial-gradient(circle at 60% 55%,#0a3670 0%,#032c5f 45%,#021a3a 100%)}
-#map{width:100%;height:100%;background:#0d3a74;cursor:grab}.leaflet-container{font-family:Inter,sans-serif}
-.pin{position:relative;width:22px;height:22px;border-radius:50%;border:2px solid #021a3a;display:flex;align-items:center;justify-content:center;font:700 11px Saira,sans-serif;color:#021a3a;box-shadow:0 0 0 3px rgba(255,255,255,.75)}
-.pin.g{background:#2fd37b}.pin.r{background:#ff4d4d}
-.pin.ring::after{content:'';position:absolute;inset:-10px;border-radius:50%;border:3px solid;animation:pl 1s ease-in-out infinite}
-.pin.ring.g::after{border-color:#0c8a4b}.pin.ring.r::after{border-color:#e5121c}
-@keyframes pl{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(1.35)}}
-.leaflet-tooltip.rua{background:#fff;color:#021a3a;border:1px solid #0058C8;font:600 12px Inter,sans-serif;padding:2px 7px;box-shadow:0 1px 4px rgba(0,0,0,.3)}
-.leaflet-tooltip.par{background:#021a3a;color:#fff;border:1px solid #f59f0a;font:600 12px Inter,sans-serif}
-.lowz .leaflet-tooltip.rua{display:none}
-.leaflet-tile-pane .osm{filter:invert(1) hue-rotate(200deg) saturate(2.4) brightness(1.9) contrast(.8)}
-.leaflet-tile-pane .sat{filter:saturate(.7) brightness(.8) hue-rotate(-8deg)}
-.leaflet-container{background:#0d3a74}
-.leaflet-control-layers,.leaflet-bar a{background:#021a3a!important;color:#fff!important;border-color:#2e4766!important}
-.leaflet-control-attribution{background:rgba(2,26,58,.7)!important;color:#b9c6d8!important}.leaflet-control-attribution a{color:#7fb6ee!important}
-
+svg{width:100%;height:100%;display:block;cursor:grab}svg:active{cursor:grabbing}
 .sec{padding:14px 18px;border-bottom:1px solid var(--line)}
 .sec h3{margin:0 0 10px;font-family:"Share Tech",monospace;font-weight:400;font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--sky)}
 .fl{display:flex;flex-wrap:wrap;gap:8px}
@@ -53,16 +38,16 @@ input{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--lin
 .item:hover,.item.sel{background:#0d3a74}
 .item .t{font-family:"Share Tech",monospace;font-size:15px}.item .s{font-size:12px;color:var(--muted)}.item .c{font-size:12px;color:var(--muted);text-align:right}
 .dot{width:12px;height:12px;border-radius:50%;display:inline-block}
-.mb{position:absolute;left:16px;top:16px;display:flex;flex-direction:column;gap:8px;z-index:1000}
+.mb{position:absolute;left:16px;top:16px;display:flex;flex-direction:column;gap:8px;z-index:5}
 .mb button,.zoomctl button{border:1px solid var(--line);background:rgba(2,26,58,.88);color:#fff;border-radius:10px;cursor:pointer;font:600 13px Inter,sans-serif;padding:10px 14px;text-align:left}
 .mb button:hover,.zoomctl button:hover{background:var(--blue)}
 .zoomctl{position:absolute;right:16px;top:16px;display:flex;flex-direction:column;gap:6px}.zoomctl button{width:40px;height:40px;font-size:20px;padding:0;text-align:center}
-.legend{z-index:1000;position:absolute;left:16px;bottom:16px;display:flex;flex-direction:column;gap:5px;font-size:12.5px;background:rgba(2,26,58,.8);padding:10px 12px;border-radius:12px;border:1px solid var(--line)}
+.legend{position:absolute;left:16px;bottom:16px;display:flex;flex-direction:column;gap:5px;font-size:12.5px;background:rgba(2,26,58,.8);padding:10px 12px;border-radius:12px;border:1px solid var(--line)}
 .legend div{display:flex;align-items:center;gap:8px}
 .lbl{font-family:"Share Tech",monospace;fill:#fff;paint-order:stroke;stroke:#021a3a;stroke-linejoin:round;pointer-events:none}
 .outline{vector-effect:non-scaling-stroke}
 .pulse{animation:pl 1.4s ease-in-out infinite}@keyframes pl{50%{opacity:.25}}
-#alertbar{display:none;position:absolute;left:50%;top:14px;transform:translateX(-50%);z-index:1001;background:#b3141c;border:2px solid #ff8a8a;border-radius:14px;padding:10px 18px;gap:4px;flex-direction:column;align-items:center;cursor:pointer;animation:al 1s ease-in-out infinite;max-width:60%;font-size:13px;text-align:center}@keyframes al{50%{background:#ff2a35}}@keyframes alg{50%{background:#18b86a}}
+#alertbar{display:none;position:absolute;left:50%;top:14px;transform:translateX(-50%);z-index:6;background:#b3141c;border:2px solid #ff8a8a;border-radius:14px;padding:10px 18px;gap:4px;flex-direction:column;align-items:center;cursor:pointer;animation:al 1s ease-in-out infinite;max-width:60%;font-size:13px;text-align:center}@keyframes al{50%{background:#ff2a35}}@keyframes alg{50%{background:#18b86a}}
 #alertmodal{position:fixed;inset:0;z-index:10000;background:rgba(40,0,0,.78);display:flex;align-items:center;justify-content:center}
 #alertmodal .box{background:#fff;color:#400;border:6px solid #e5121c;border-radius:20px;padding:26px 34px;max-width:min(560px,92vw);animation:al2 .8s ease-in-out infinite}@keyframes al2{50%{border-color:#ff9aa0}}
 #alertmodal .big{font:700 40px Saira,sans-serif;color:#e5121c}#alertmodal ul{padding-left:18px;font-size:15px}
@@ -89,9 +74,10 @@ input{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--lin
 <div id="list"></div>
 </aside>
 <div id="mapwrap">
-<div id="map" role="img" aria-label="Mapa do pedido 4450"></div>
-<div class="mb"><button id="bTrilha">✈ Trajeto da isca ligada</button><button id="bBr">⌂ Ver todas</button><button id="bAtu">↻ Atualizar agora</button></div>
+<svg id="map" role="img" aria-label="Mapa do pedido 4450"></svg>
+<div class="mb"><button id="bTrilha">✈ Trajeto da isca ligada</button><button id="bBr">⌂ Brasil inteiro</button><button id="bAtu">↻ Atualizar agora</button></div>
 <div id="alertbar"></div>
+<div class="zoomctl"><button id="zin">+</button><button id="zout">−</button></div>
 <div class="legend">
 <div><span class="dot" style="background:var(--ok)"></span>Confirmada no cliente</div>
 <div><span class="dot" style="background:var(--bad)"></span>Não encontrada no cliente</div>
@@ -127,7 +113,6 @@ while(!data){
 }
 let FIL='all',SEL=null,LASTT=null,SENHA='',ULT=null;
 const OK='#2fd37b',BAD='#ff4d4d',AM='#f59f0a';
-let MAPA=null,GI,GTL,GTR,GBU;
 function montar(data,keep){
 const REF=new Date(data.gerado.replace(' ','T')).getTime();
 const fmtD=s=>s?s.slice(8,10)+'/'+s.slice(5,7)+' '+s.slice(11):'–';
@@ -141,72 +126,103 @@ document.getElementById('kOk').textContent=D.filter(d=>d.ok).length;
 document.getElementById('kBad').textContent=D.filter(d=>!d.ok).length;
 document.getElementById('sub').textContent='Minerva · Rolim de Moura (RO) · atualizado em '+data.gerado.slice(8,10)+'/'+data.gerado.slice(5,7)+' às '+data.gerado.slice(11);
 
-if(!MAPA){
- MAPA=L.map('map',{zoomControl:false,zoomSnap:.5}).setView([-11.7,-61.7],6);
- L.control.zoom({position:'bottomright'}).addTo(MAPA);
- const ruas=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{className:'osm',maxZoom:19,attribution:'© OpenStreetMap'}).addTo(MAPA);
- const sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{className:'sat',maxZoom:19,attribution:'Imagens © Esri'});
- L.control.layers({'Mapa (ruas)':ruas,'Satélite':sat},null,{position:'bottomright'}).addTo(MAPA);
- GI=L.layerGroup().addTo(MAPA);GTL=L.layerGroup().addTo(MAPA);GTR=L.layerGroup().addTo(MAPA);GBU=L.layerGroup().addTo(MAPA);
- const lz=()=>document.getElementById('map').classList.toggle('lowz',MAPA.getZoom()<11);MAPA.on('zoomend',lz);lz();
- MAPA.on('click',()=>{});
-}
-[GI,GTL,GTR,GBU].forEach(g=>g.clearLayers());
-if(!window.CONT){window.CONT=L.layerGroup().addTo(MAPA);CONT.setZIndex&&0;
- L.polygon(data.o.map(q=>[q[1],q[0]]),{color:'#4a8cda',weight:2,opacity:.9,fill:false,interactive:false}).addTo(CONT);
- (data.s||[]).forEach(e=>e[4].forEach(r=>{const pts=[];for(let i=0;i<r.length;i+=2)pts.push([r[i+1],r[i]]);L.polygon(pts,{color:'#7fb6ee',weight:1,opacity:.7,fill:false,interactive:false}).addTo(CONT)}));
-}
-const ll=d=>[d.lat,d.lon];
-const T=data.trilha.map(p=>({t:p[0],lat:p[1],lon:p[2],v:p[3],ig:p[4],e:p[5]}));
+const W=1000,H=1000,LON0=-74.2,LON1=-34.6,LAT0=-34,LAT1=5.6,K=Math.cos(-14*Math.PI/180);
+const S=Math.min((W-40)/((LON1-LON0)*K),(H-40)/(LAT1-LAT0));
+const OX=(W-(LON1-LON0)*K*S)/2,OY=(H-(LAT1-LAT0)*S)/2;
+const px=(lon,lat)=>[OX+(lon-LON0)*K*S,OY+(LAT1-lat)*S];
+const svg=d3.select('#map');svg.selectAll('*').remove();const root=svg.append('g');
+root.append('path').attr('d','M'+data.o.map(p=>px(p[0],p[1]).join(' ')).join('L')+'Z').attr('fill','#0d3a74').attr('fill-opacity',.45).attr('stroke','#4a8cda').attr('stroke-opacity',.6).attr('class','outline');
+(data.s||[]).forEach(e=>{const d=e[4].map(r=>{let o='M';for(let i=0;i<r.length;i+=2){const[x,y]=px(r[i],r[i+1]);o+=(i?'L':'')+x.toFixed(1)+' '+y.toFixed(1)}return o+'Z'}).join('');
+ root.append('path').attr('d',d).attr('fill','none').attr('stroke','#7fb6ee').attr('stroke-opacity',.6).attr('class','outline');e.xy=px(e[2],e[3])});
+const stT=root.append('g').style('pointer-events','none').selectAll('text').data(data.s||[]).join('text').attr('class','lbl').attr('text-anchor','middle').attr('x',e=>e.xy[0]).attr('y',e=>e.xy[1]).style('letter-spacing','.12em').style('text-transform','uppercase').attr('fill-opacity',.8);
+
+// trilha
+const T=data.trilha.map(p=>({t:p[0],lat:p[1],lon:p[2],v:p[3],ig:p[4],e:p[5],xy:px(p[2],p[1])}));
 const VOO=new Set(data.voo||[]);
-const og=data.origem,dg=data.destino_pos;
-if(T.length){
- L.polyline([[og.lat,og.lon],[T[0].lat,T[0].lon]],{color:AM,weight:3,dashArray:'8 8',opacity:.8}).addTo(GTL);
- for(let i=1;i<T.length;i++)L.polyline([[T[i-1].lat,T[i-1].lon],[T[i].lat,T[i].lon]],{color:VOO.has(i)?AM:'#0c8a4b',weight:VOO.has(i)?3:4,dashArray:VOO.has(i)?'8 8':null,opacity:.95}).addTo(GTL);
- L.polyline([[T[T.length-1].lat,T[T.length-1].lon],[dg.lat,dg.lon]],{color:AM,weight:3,dashArray:'8 8',opacity:.7}).addTo(GTL);
- T.forEach(p=>L.circleMarker([p.lat,p.lon],{radius:3,color:'#021a3a',weight:1,fillColor:OK,fillOpacity:1}).bindTooltip(fmtD(p.t)+' · '+p.e+' · '+p.v+' km/h',{sticky:true}).addTo(GTL));
- L.circleMarker([og.lat,og.lon],{radius:8,color:'#021a3a',weight:2,fillColor:AM,fillOpacity:1}).bindTooltip('Vinhedo (origem)',{permanent:true,direction:'right',offset:[8,0],className:'par'}).addTo(GTL);
- L.circleMarker([dg.lat,dg.lon],{radius:10,color:AM,weight:3,fillOpacity:0}).bindTooltip('Rolim de Moura (destino)',{permanent:true,direction:'right',offset:[10,0],className:'par'}).addTo(GTL);
-}
-Object.entries(data.trilhas||{}).forEach(([id,p])=>{const d=D.find(x=>x.id===id)||{};if(p.length>1)L.polyline(p.map(q=>[q[1],q[2]]),{color:d.ok?'#0c8a4b':'#d62828',weight:3,opacity:.85}).bindTooltip(id+' · '+p.length+' posições',{sticky:true}).addTo(GTR)});
+const trG=root.append('g');
+const og=data.origem,dg=data.destino_pos;const oxy=px(og.lon,og.lat),dxy=px(dg.lon,dg.lat);
+const segs=[];
+if(T.length){segs.push({a:oxy,b:T[0].xy,voo:true,o:true});for(let i=1;i<T.length;i++)segs.push({a:T[i-1].xy,b:T[i].xy,voo:VOO.has(i)});segs.push({a:T[T.length-1].xy,b:dxy,voo:false,d:true})}
+const sl=trG.selectAll('line').data(segs).join('line').attr('x1',s=>s.a[0]).attr('y1',s=>s.a[1]).attr('x2',s=>s.b[0]).attr('y2',s=>s.b[1]).attr('stroke',s=>s.voo?AM:OK).attr('stroke-opacity',s=>s.o||s.d?.5:.95).attr('stroke-linecap','round');
+const tp=trG.selectAll('circle').data(T).join('circle').attr('cx',p=>p.xy[0]).attr('cy',p=>p.xy[1]).attr('fill',OK).attr('stroke','#021a3a');
+tp.append('title').text(p=>fmtD(p.t)+' · '+p.e+' · '+p.v+' km/h');
+const mk=trG.append('g');
+const mkO=mk.append('g').attr('transform',`translate(${oxy})`);mkO.append('circle').attr('fill',AM).attr('stroke','#021a3a');
+const mkD=mk.append('g').attr('transform',`translate(${dxy})`);mkD.append('circle').attr('fill','none').attr('stroke',AM);
+const mkOt=mk.append('text').attr('class','lbl').attr('x',oxy[0]).attr('y',oxy[1]).text('Vinhedo (origem)');
+const mkDt=mk.append('text').attr('class','lbl').attr('x',dxy[0]).attr('y',dxy[1]).text('Rolim de Moura (destino)');
+
+// cidades (so nomes, sem ruas)
+const CID=[['Vinhedo',-23.03,-46.98,0],['Brasília',-15.79,-47.88,0],['Porto Velho',-8.76,-63.90,0],['Rolim de Moura',-11.73,-61.77,0],
+['Campinas',-22.91,-47.06,1],['Goiânia',-16.68,-49.25,1],['Cuiabá',-15.60,-56.10,1],['Ji-Paraná',-10.88,-61.95,1],['Ariquemes',-9.91,-63.04,1],['Cacoal',-11.43,-61.45,1],
+['Pimenta Bueno',-11.67,-61.19,2],['Jaru',-10.44,-62.47,2],['Ouro Preto do Oeste',-10.72,-62.25,2]].map(c=>({n:c[0],t:c[3],xy:px(c[2],c[1])}));
+const cG=root.append('g').style('pointer-events','none');
+const cC=cG.selectAll('circle').data(CID).join('circle').attr('cx',c=>c.xy[0]).attr('cy',c=>c.xy[1]).attr('fill','#fff').attr('stroke','#021a3a');
+const cT=cG.selectAll('text').data(CID).join('text').attr('class','lbl').attr('x',c=>c.xy[0]).attr('y',c=>c.xy[1]).text(c=>c.n);
+
+// trilhas das nao encontradas que comunicaram + area de busca
+const TRS=Object.entries(data.trilhas||{}).map(([id,p])=>({id,xy:p.map(q=>px(q[2],q[1])),p}));
+const trsG=root.append('g');
+const trsL=trsG.selectAll('polyline').data(TRS).join('polyline').attr('fill','none').attr('stroke',t=>(D.find(d=>d.id===t.id)||{}).ok?'#7dffb0':'#ff8a8a').attr('stroke-linejoin','round').attr('points',t=>t.xy.map(q=>q.join(',')).join(' '));
 const fin=D.filter(d=>!d.ok&&d.rolim&&d.lat!=null);
-if(fin.length){const cx=fin.reduce((a,d)=>a+d.lon,0)/fin.length,cy=fin.reduce((a,d)=>a+d.lat,0)/fin.length;
- L.circle([cy,cx],{radius:2000,color:'#e5121c',weight:2,fillColor:'#ff4d4d',fillOpacity:.12}).bindTooltip('PROCURAR AQUI · Av. 25 de Agosto, Rolim de Moura',{permanent:true,direction:'top',offset:[0,-30],className:'par'}).addTo(GBU)}
-const grp=new Map();D.filter(d=>d.lat!=null).forEach(d=>{const k=d.lat.toFixed(4)+','+d.lon.toFixed(4);if(!grp.has(k))grp.set(k,{items:[]});grp.get(k).items.push(d)});
+let busca=null;
+if(fin.length){const cx=fin.reduce((a,d)=>a+d.lon,0)/fin.length,cy=fin.reduce((a,d)=>a+d.lat,0)/fin.length;const c=px(cx,cy);busca={c,r:2.0/111*S};}
+const bG=root.append('g').style('pointer-events','none');
+const bC=busca?bG.append('circle').attr('cx',busca.c[0]).attr('cy',busca.c[1]).attr('r',busca.r).attr('fill','#ff4d4d').attr('fill-opacity',.10).attr('stroke','#ff8a8a').attr('class','pulse'):null;
+const bT=busca?bG.append('text').attr('class','lbl').attr('x',busca.c[0]).attr('y',busca.c[1]).attr('text-anchor','middle').text('PROCURAR AQUI · Av. 25 de Agosto, Rolim de Moura'):null;
+// iscas com posicao
+const withPos=D.filter(d=>d.lat!=null);withPos.forEach(d=>{d.xy=px(d.lon,d.lat)});
+const grp=new Map();withPos.forEach(d=>{const k=d.lat.toFixed(3)+','+d.lon.toFixed(3);if(!grp.has(k))grp.set(k,{xy:d.xy,items:[]});grp.get(k).items.push(d)});
 const G=[...grp.values()];
+const pts=root.append('g').selectAll('g').data(G).join('g').attr('transform',g=>`translate(${g.xy})`).style('cursor','pointer');
+pts.append('circle').attr('class','ringr').attr('fill','none').attr('stroke',AM);
+pts.append('circle').attr('class','halo');
+pts.append('circle').attr('class','core').attr('stroke','#021a3a');
+pts.append('text').attr('class','rua lbl').attr('text-anchor','start')
+pts.append('text').attr('class','cnt').attr('text-anchor','middle').attr('dy','.35em').attr('fill','#021a3a').style('font-family','Saira,sans-serif').style('font-weight',700);
+pts.on('click',(ev,g)=>{ev.stopPropagation();selectItem(g.items[0],g)});
+
+let k=1;
+const zoom=d3.zoom().scaleExtent([1,800]).on('zoom',ev=>{k=ev.transform.k;LASTT=ev.transform;root.attr('transform',ev.transform);restyle()});
+svg.call(zoom).on('dblclick.zoom',null);
+const fit=()=>{const r=svg.node().getBoundingClientRect();return Math.min(r.width,r.height)/W};
+function toView(x,y,kk,dur=900){const r=svg.node().getBoundingClientRect();svg.transition().duration(dur).ease(d3.easeCubicInOut).call(zoom.transform,d3.zoomIdentity.translate(r.width/2,r.height/2).scale(kk).translate(-x,-y))}
+function fitBox(xs,ys,dur=1000){const x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys);const r=svg.node().getBoundingClientRect();const bw=Math.max(x1-x0,20),bh=Math.max(y1-y0,20);toView((x0+x1)/2,(y0+y1)/2,Math.min(0.78*Math.min(r.width/bw,r.height/bh),fit()*150),dur)}
+const home=()=>toView(W/2,H/2,fit());
 const match=d=>FIL==='all'||(FIL==='ok'?d.ok:FIL==='bad'?!d.ok:FIL==='lig'?d.lig:FIL==='com'?d.com:FIL==='sem'?d.sem:true);
-const cidRua=e=>(e||'').split(' - ').reverse().join(' · ');
-G.forEach(g=>{g.m=L.marker(ll(g.items[0]),{icon:L.divIcon({className:'',html:'',iconSize:[22,22]}),riseOnHover:true});g.m.on('click',()=>selectItem(g.items[0]))});
-function pinos(){
- G.forEach(g=>{const it=g.items.filter(match);
-  if(!it.length){GI.removeLayer(g.m);return}
-  const cm=it.some(i=>i.com);
-  g.m.setIcon(L.divIcon({className:'',html:'<div class="pin '+(it.some(i=>i.ok)?'g':'r')+(cm?' ring '+(it.some(i=>i.com&&!i.ok)?'r':'g'):'')+'">'+(it.length>1?it.length:'')+'</div>',iconSize:[22,22],iconAnchor:[11,11]}));
-  g.m.unbindTooltip();g.m.bindTooltip((it.length>1?it.length+' iscas · ':'')+cidRua(it[0].end),{permanent:true,direction:'right',offset:[14,0],className:'rua'});
-  GI.addLayer(g.m)});
- const set=(g,on)=>on?MAPA.addLayer(g):MAPA.removeLayer(g);
- set(GTL,FIL==='all'||FIL==='ok'||FIL==='lig');set(GTR,FIL==='all'||FIL==='bad'||FIL==='ok'||FIL==='com');set(GBU,FIL==='all'||FIL==='bad');
-}
-function ajustar(){
- const m=D.filter(d=>match(d)&&d.lat!=null).map(ll);
- const comT=FIL==='all'||FIL==='ok'||FIL==='lig';
- const pts=m.concat(comT&&T.length?T.map(p=>[p.lat,p.lon]).concat([[og.lat,og.lon],[dg.lat,dg.lon]]):[]);
- if(pts.length)MAPA.fitBounds(L.latLngBounds(pts).pad(.2),{maxZoom:14});
+function restyle(){
+ const f=fit(),z=k/f;
+ pts.style('display',g=>g.items.some(match)?null:'none');
+ pts.select('.core').attr('fill',g=>g.items.some(i=>i.ok)?OK:BAD).attr('stroke-width',1.2/k).attr('r',g=>(3.4+Math.sqrt(g.items.length)*1.4)/k*f*1.6);
+ pts.select('.halo').attr('fill',g=>g.items.some(i=>i.ok)?OK:BAD).attr('fill-opacity',.25).attr('r',g=>(7+Math.sqrt(g.items.length)*2.6)/k*f*1.6);
+ pts.select('.ringr').style('display',g=>g.items.some(i=>i.com)?null:'none').attr('stroke',g=>g.items.some(i=>i.com&&!i.ok)?'#ff4d4d':'#2fd37b').attr('class',g=>'ringr'+(g.items.some(i=>i.com)?' pulse':'')).attr('stroke-width',3.4/k).attr('r',g=>(12+Math.sqrt(g.items.length)*2.6)/k*f*1.6);
+pts.select('.rua').text(g=>g.items.length>1?g.items.length+' iscas · '+((g.items[0].end||'').split(' - ').reverse().join(' · ')):(g.items[0].end||'').split(' - ').reverse().join(' · ')).attr('font-size',12/k*f*1.6).attr('stroke-width',3/k*f*1.6).attr('dx',14/k*f*1.6).attr('dy',4/k*f*1.6).style('display',z>(FIL==='all'?9:4)?null:'none')
+ pts.select('.cnt').text(g=>g.items.length>1?g.items.length:'').style('font-size',g=>(Math.sqrt(g.items.length)*1.2+7)/k*f*1.6+'px').style('display',z>5?null:'none');
+ const showT=FIL==='all'||FIL==='ok'||FIL==='lig';trG.style('display',showT?null:'none');
+ trsG.style('display',FIL==='all'||FIL==='bad'||FIL==='ok'||FIL==='com'?null:'none');trsL.attr('stroke-width',(z<6?1.6:1.3)/k*f*1.6).attr('stroke-opacity',.8);
+ if(bC){bT.attr('font-size',13/k*f*1.6).attr('stroke-width',3/k*f*1.6).attr('dy',-(busca.r+6/k*f*1.6));bC.attr('stroke-width',2/k*f*1.6);bG.style('display',FIL==='all'||FIL==='bad'?null:'none')}
+ sl.attr('stroke-width',(z<6?2.4:2)/k*f*1.6).attr('stroke-dasharray',s=>s.voo||s.o||s.d?`${7/k*f*1.6} ${6/k*f*1.6}`:null);
+ tp.attr('r',2.4/k*f*1.6).attr('stroke-width',.8/k*f*1.6).style('display',z>2?null:'none');
+ mkO.select('circle').attr('r',6/k*f*1.6).attr('stroke-width',1.4/k);mkD.select('circle').attr('r',10/k*f*1.6).attr('stroke-width',2.4/k);
+ mk.selectAll('text').attr('font-size',13/k*f*1.6).attr('stroke-width',3/k*f*1.6).attr('dx',12/k*f*1.6).attr('dy',-8/k*f*1.6);
+ cC.attr('r',3.2/k*f*1.6).attr('stroke-width',1/k*f*1.6).style('display',c=>c.t===0||(c.t===1&&z>3)||(c.t===2&&z>7)?null:'none');
+ cT.attr('font-size',13/k*f*1.6).attr('stroke-width',3/k*f*1.6).attr('dx',7/k*f*1.6).attr('dy',-6/k*f*1.6).style('display',c=>c.t===0||(c.t===1&&z>3)||(c.t===2&&z>7)?null:'none');
+ stT.attr('font-size',12/k).attr('stroke-width',3/k).style('display',z<14?null:'none').text(e=>z<5?e[1]:e[0]);
 }
 const filt=document.getElementById('filters');filt.innerHTML='';
 const FS=[['all','Todas',D.length],['ok','Confirmadas no cliente',D.filter(d=>d.ok).length],['bad','Não encontradas',D.filter(d=>!d.ok).length],['lig','Ligada',1],['com','Ligadas após a entrega',D.filter(d=>d.com).length]];
-FS.forEach(([v,n,c])=>{const b=document.createElement('button');b.textContent=n+' · '+c;if(v===FIL)b.classList.add('on');b.onclick=()=>{[...filt.children].forEach(x=>x.classList.remove('on'));b.classList.add('on');FIL=v;document.getElementById('q').value='';pinos();render();ajustar()};filt.appendChild(b)});
+FS.forEach(([v,n,c])=>{const b=document.createElement('button');b.textContent=n+' · '+c;if(v===FIL)b.classList.add('on');b.onclick=()=>{[...filt.children].forEach(x=>x.classList.remove('on'));b.classList.add('on');FIL=v;document.getElementById('q').value='';restyle();render();const m=D.filter(d=>match(d)&&d.lat!=null);if(m.length)fitBox(m.map(d=>d.xy[0]).concat(v==='all'||v==='ok'||v==='lig'?T.map(p=>p.xy[0]):[]),m.map(d=>d.xy[1]).concat(v==='all'||v==='ok'||v==='lig'?T.map(p=>p.xy[1]):[]))};filt.appendChild(b)});
 function render(){
  const q=document.getElementById('q').value.trim();
  let a=D.filter(d=>match(d)&&(!q||d.id.includes(q)||d.chip.includes(q)));
  a.sort((x,y)=>(y.uc||'').localeCompare(x.uc||'')||x.id.localeCompare(y.id));
  document.getElementById('lt').textContent=({all:'Todas as iscas',ok:'Confirmadas no cliente',bad:'Não encontradas',lig:'Isca ligada',com:'Ligadas após a entrega (19/11 17:30)',sem:'Sem sinal há +3 dias'})[FIL];
  document.getElementById('lc').textContent=a.length+' iscas · mais recente primeiro';
- const Ls=document.getElementById('list');Ls.innerHTML='';
+ const L=document.getElementById('list');L.innerHTML='';
  a.forEach(d=>{const el=document.createElement('div');el.className='item'+(SEL===d.id?' sel':'');
   const du=d.uc?rel(d.uc):'sem registro';
   el.innerHTML=`<span class="dot" style="background:${d.ok?OK:BAD}"></span><div><div class="t">${d.id}${d.lig?' · LIGADA (de propósito)':d.com?' · LIGADA após entrega':''}</div><div class="s">${d.end?d.end:'sem posição no Sitalcom'}</div><div class="s" style="opacity:.6">${d.chip}</div></div><div class="c">${fmtD(d.uc)}<br>${du}</div>`;
-  el.onclick=()=>selectItem(d);Ls.appendChild(el)});
+  el.onclick=()=>selectItem(d);L.appendChild(el)});
 }
 function detail(d){
  const el=document.getElementById('detail');el.style.display='block';
@@ -223,17 +239,20 @@ function detail(d){
  if(d.lig){const r=data.resumo||{};h+=`<p style="margin-top:8px"><b>Trajeto (${data.trilha.length} posições válidas)</b></p><ul class="tl">`+data.paradas.filter(p=>p.n>=2||p.mov).map(p=>`<li><b>${p.lugar}</b><br>${fmtD(p.ini)}${p.fim!==p.ini?' → '+fmtD(p.fim):''} · ${p.n} posições</li>`).join('')+`</ul><p style="font-size:12px">Trechos tracejados em laranja: ela foi de avião, então os saltos entre Campinas, Brasília e Porto Velho são esperados. Descartadas: ${r.semgps||0} sem GPS (0,0) e ${r.duplicadas||0} duplicadas.</p>`}
  el.innerHTML=h;
 }
-function selectItem(d){
+function selectItem(d,g){
  SEL=d.id;detail(d);render();
- if(d.lig&&T.length)MAPA.fitBounds(L.latLngBounds(T.map(p=>[p.lat,p.lon]).concat([[og.lat,og.lon],[dg.lat,dg.lon]])).pad(.15));
- else if(d.lat!=null)MAPA.setView(ll(d),Math.max(MAPA.getZoom(),16),{animate:true});
+ if(d.lig&&T.length){fitBox(T.map(p=>p.xy[0]).concat([oxy[0],dxy[0]]),T.map(p=>p.xy[1]).concat([oxy[1],dxy[1]]))}
+ else if(d.lat!=null){toView(d.xy[0],d.xy[1],Math.max(k,fit()*60))}
 }
 document.getElementById('q').oninput=()=>render();
 document.getElementById('bTrilha').onclick=()=>{const d=D.find(x=>x.lig);if(d)selectItem(d)};
-document.getElementById('bBr').onclick=()=>{FIL='all';[...filt.children].forEach((x,i)=>x.classList.toggle('on',i===0));pinos();render();ajustar()};
-pinos();render();if(SEL){const d=D.find(x=>x.id===SEL);if(d)detail(d)}
-if(!keep)ajustar();
-setTimeout(()=>MAPA.invalidateSize(),150);
+document.getElementById('bBr').onclick=home;
+d3.select('#zin').on('click',()=>svg.transition().duration(400).call(zoom.scaleBy,2));
+d3.select('#zout').on('click',()=>svg.transition().duration(400).call(zoom.scaleBy,.5));
+svg.on('click',ev=>{const[x,y]=d3.pointer(ev,root.node());toView(x,y,Math.min(k*3.2,fit()*600),800)});
+render();restyle();if(SEL){const d=D.find(x=>x.id===SEL);if(d)detail(d)}
+if(keep&&keep.t)svg.call(zoom.transform,keep.t);else{home();setTimeout(home,100)}
+window.onresize=()=>home();
 }
 
 // ---------- alertas e atualizacao ----------
@@ -265,7 +284,7 @@ async function atualizar(manual){
  try{
   const b=(await fetch('minerva.enc?t='+Date.now(),{cache:'no-store'}).then(r=>{if(!r.ok)throw 0;return r.text()})).trim();
   const nd=await abrir(SENHA,b);
-  montar(nd,{keep:1});alertas(nd);ULT=new Date();
+  montar(nd,{t:LASTT});alertas(nd);ULT=new Date();
  }catch(e){bt.textContent='↻ Falhou · tentar de novo'}
  busy=false;falta=PERIODO;
 }
