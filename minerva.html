@@ -140,7 +140,7 @@ document.getElementById('sub').textContent='Minerva · Rolim de Moura (RO) · at
 if(!MAPA){
  MAPA=L.map('map',{zoomControl:false,zoomSnap:.5}).setView([-11.7,-61.7],6);
  L.control.zoom({position:'bottomright'}).addTo(MAPA);
- const ruas=L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{subdomains:'abcd',maxZoom:19,attribution:'© OpenStreetMap · © CARTO'}).addTo(MAPA);
+ const ruas=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(MAPA);
  const sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Imagens © Esri'});
  L.control.layers({'Mapa (ruas)':ruas,'Satélite':sat},null,{position:'bottomright'}).addTo(MAPA);
  GI=L.layerGroup().addTo(MAPA);GTL=L.layerGroup().addTo(MAPA);GTR=L.layerGroup().addTo(MAPA);GBU=L.layerGroup().addTo(MAPA);
