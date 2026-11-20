@@ -310,6 +310,18 @@ window.addEventListener('resize',()=>home());
 // intro: start zoomed out slightly then settle
 svg.call(zoom.transform,d3.zoomIdentity.translate(svg.node().getBoundingClientRect().width/2,svg.node().getBoundingClientRect().height/2).scale(fit()*.6).translate(-W/2,-H/2));
 setTimeout(home,100);
+// atualizacao automatica: a cada 60 s confere se saiu base nova e recarrega (a senha fica salva)
+let ult=Date.now();['pointerdown','keydown','wheel','touchstart'].forEach(e=>addEventListener(e,()=>ult=Date.now(),{passive:true}));
+let ck=Date.now();
+setInterval(async()=>{
+ if(Date.now()-ck<60000)return;ck=Date.now();
+ try{
+  const b=(await fetch('mapdata.enc?t='+Date.now(),{cache:'no-store'}).then(r=>{if(!r.ok)throw 0;return r.text()})).trim();
+  if(!b||b===blob)return;
+  const nd=await abrir(localStorage.getItem('mapa_s')||'',b);
+  if(nd.gerado&&nd.gerado!==data.gerado){ if(document.hidden||Date.now()-ult>30000)location.reload(); else ck=Date.now()-45000; }
+ }catch(e){}
+},5000);
 })();
 </script>
 </body>

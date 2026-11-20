@@ -75,7 +75,7 @@ input{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--lin
 </aside>
 <div id="mapwrap">
 <svg id="map" role="img" aria-label="Mapa do pedido 4450"></svg>
-<div class="mb"><button id="bTrilha">✈ Trajeto da isca ligada</button><button id="bBr">⌂ Brasil inteiro</button><button id="bAtu">↻ Atualizar agora</button></div>
+<div class="mb"><button id="bTrilha">✈ Trajeto da isca ligada</button><button id="bBr">⌂ Brasil inteiro</button><button id="bNot">🔔 Ativar avisos no canto da tela</button><button id="bAtu">↻ Atualizar agora</button></div>
 <div id="alertbar"></div>
 <div class="zoomctl"><button id="zin">+</button><button id="zout">−</button></div>
 <div class="legend">
@@ -111,7 +111,7 @@ while(!data){
  const senha=sv||await pedir(erro);sv='';
  try{ data=await abrir(senha,blob); SENHA=senha; try{localStorage.setItem('mapa_s',senha)}catch(e){} }catch(e){ erro='Senha incorreta.'; try{localStorage.removeItem('mapa_s')}catch(x){} }
 }
-let FIL='all',SEL=null,LASTT=null,SENHA='',ULT=null;
+let FIL='all',SEL=null,LASTT=null,SENHA='',ULT=null,TRAJ=false;
 const OK='#2fd37b',BAD='#ff4d4d',AM='#f59f0a';
 function montar(data,keep){
 const REF=new Date(data.gerado.replace(' ','T')).getTime();
@@ -198,7 +198,7 @@ function restyle(){
  pts.select('.ringr').style('display',g=>g.items.some(i=>i.com)?null:'none').attr('stroke',g=>g.items.some(i=>i.com&&!i.ok)?'#ff4d4d':'#2fd37b').attr('class',g=>'ringr'+(g.items.some(i=>i.com)?' pulse':'')).attr('stroke-width',3.4/k).attr('r',g=>(12+Math.sqrt(g.items.length)*2.6)/k*f*1.6);
 pts.select('.rua').text(g=>g.items.length>1?g.items.length+' iscas · '+((g.items[0].end||'').split(' - ').reverse().join(' · ')):(g.items[0].end||'').split(' - ').reverse().join(' · ')).attr('font-size',12/k*f*1.6).attr('stroke-width',3/k*f*1.6).attr('dx',14/k*f*1.6).attr('dy',4/k*f*1.6).style('display',z>(FIL==='all'?9:4)?null:'none')
  pts.select('.cnt').text(g=>g.items.length>1?g.items.length:'').style('font-size',g=>(Math.sqrt(g.items.length)*1.2+7)/k*f*1.6+'px').style('display',z>5?null:'none');
- const showT=FIL==='all'||FIL==='ok'||FIL==='lig';trG.style('display',showT?null:'none');
+ trG.style('display',TRAJ?null:'none');
  trsG.style('display',FIL==='all'||FIL==='bad'||FIL==='ok'||FIL==='com'?null:'none');trsL.attr('stroke-width',(z<6?1.6:1.3)/k*f*1.6).attr('stroke-opacity',.8);
  if(bC){bT.attr('font-size',13/k*f*1.6).attr('stroke-width',3/k*f*1.6).attr('dy',-(busca.r+6/k*f*1.6));bC.attr('stroke-width',2/k*f*1.6);bG.style('display',FIL==='all'||FIL==='bad'?null:'none')}
  sl.attr('stroke-width',(z<6?2.4:2)/k*f*1.6).attr('stroke-dasharray',s=>s.voo||s.o||s.d?`${7/k*f*1.6} ${6/k*f*1.6}`:null);
@@ -238,14 +238,18 @@ function detail(d){
  if(d.com&&!d.ok)h+='<p style="color:'+BAD+'"><b style="color:'+BAD+'">Ligada após a entrega (19/11 17:30), mas estava na lista de não encontradas. Vale conferir de novo no cliente.</b></p>';
  if(d.lig){const r=data.resumo||{};h+=`<p style="margin-top:8px"><b>Trajeto (${data.trilha.length} posições válidas)</b></p><ul class="tl">`+data.paradas.filter(p=>p.n>=2||p.mov).map(p=>`<li><b>${p.lugar}</b><br>${fmtD(p.ini)}${p.fim!==p.ini?' → '+fmtD(p.fim):''} · ${p.n} posições</li>`).join('')+`</ul><p style="font-size:12px">Trechos tracejados em laranja: ela foi de avião, então os saltos entre Campinas, Brasília e Porto Velho são esperados. Descartadas: ${r.semgps||0} sem GPS (0,0) e ${r.duplicadas||0} duplicadas.</p>`}
  el.innerHTML=h;
+ el.style.position='relative';
+ const x=document.createElement('button');x.textContent='✕';x.title='Fechar';x.setAttribute('aria-label','Fechar');
+ x.style.cssText='position:absolute;right:8px;top:8px;width:28px;height:28px;border-radius:50%;border:1px solid #2e4766;background:#021a3a;color:#fff;font-size:14px;cursor:pointer;line-height:1;padding:0';
+ x.onclick=()=>{SEL=null;el.style.display='none';render()};el.appendChild(x);
 }
 function selectItem(d,g){
  SEL=d.id;detail(d);render();
- if(d.lig&&T.length){fitBox(T.map(p=>p.xy[0]).concat([oxy[0],dxy[0]]),T.map(p=>p.xy[1]).concat([oxy[1],dxy[1]]))}
+ if(d.lig&&T.length){TRAJ=true;document.getElementById('bTrilha').style.background='var(--blue)';restyle();fitBox(T.map(p=>p.xy[0]).concat([oxy[0],dxy[0]]),T.map(p=>p.xy[1]).concat([oxy[1],dxy[1]]))}
  else if(d.lat!=null){toView(d.xy[0],d.xy[1],Math.max(k,fit()*60))}
 }
 document.getElementById('q').oninput=()=>render();
-document.getElementById('bTrilha').onclick=()=>{const d=D.find(x=>x.lig);if(d)selectItem(d)};
+document.getElementById('bTrilha').onclick=()=>{TRAJ=!TRAJ;document.getElementById('bTrilha').style.background=TRAJ?'var(--blue)':'';if(TRAJ){const d=D.find(x=>x.lig);if(d)selectItem(d)}else restyle()};
 document.getElementById('bBr').onclick=home;
 d3.select('#zin').on('click',()=>svg.transition().duration(400).call(zoom.scaleBy,2));
 d3.select('#zout').on('click',()=>svg.transition().duration(400).call(zoom.scaleBy,.5));
@@ -258,7 +262,18 @@ window.onresize=()=>home();
 // ---------- alertas e atualizacao ----------
 function fmtD(s){return s?s.slice(8,10)+'/'+s.slice(5,7)+' '+s.slice(11):'–'}
 function bip(){try{const c=new (window.AudioContext||window.webkitAudioContext)();[0,.35,.7].forEach(t=>{const o=c.createOscillator(),g=c.createGain();o.type='square';o.frequency.value=880;g.gain.value=.15;o.connect(g);g.connect(c.destination);o.start(c.currentTime+t);o.stop(c.currentTime+t+.22)})}catch(e){}}
-let tit=null;
+let tit=null;const NOTIF=new Set();
+function pedirNotif(){try{if('Notification' in window&&Notification.permission==='default')Notification.requestPermission().then(atualizaBotNot)}catch(e){}}
+function atualizaBotNot(){const b=document.getElementById('bNot');if(!b)return;try{const p=Notification.permission;b.textContent=p==='granted'?'🔔 Avisos no canto: ligados':p==='denied'?'🔕 Avisos bloqueados no navegador':'🔔 Ativar avisos no canto da tela';b.style.display=p==='granted'?'none':''}catch(e){b.style.display='none'}}
+function notificar(novos){
+ try{if(!('Notification' in window)||Notification.permission!=='granted')return;
+  const f=novos.filter(d=>!NOTIF.has(d.id+d.uc));if(!f.length)return;f.forEach(d=>NOTIF.add(d.id+d.uc));
+  const vm=f.some(d=>!d.ok);
+  const n=new Notification((vm?'🚨 ALERTA VERMELHO · ':'🟢 ALERTA VERDE · ')+'Pedido 4450',{body:f.map(d=>d.id+(d.ok?' (confirmada)':' (NÃO encontrada)')+' · '+fmtD(d.uc)).join('\n'),tag:'m4450',requireInteraction:true});
+  n.onclick=()=>{window.focus();n.close()};
+ }catch(e){}
+}
+document.addEventListener('click',pedirNotif,{once:true});
 function alertas(data){
  const lim=data.alerta_desde||'9999';
  const A=data.itens.filter(d=>!d.lig&&d.uc&&d.uc>=lim);
@@ -274,11 +289,11 @@ function alertas(data){
  const m=document.createElement('div');m.id='alertmodal';
  m.innerHTML=`<div class="box"><div class="big">🚨 ALERTA</div><p>${novos.length===1?'Uma isca ligou após a entrega':novos.length+' iscas ligaram após a entrega (19/11 17:30)'}:</p><ul>${[...novos].sort((x,y)=>(x.ok-y.ok)).map(d=>`<li style="color:${d.ok?'#0b7a43':'#b3141c'}"><b>${d.id}</b> <span class="pill ${d.ok?'v':'r'}">${d.ok?'CONFIRMADA':'NÃO ENCONTRADA'}</span> · ${fmtD(d.uc)} · ${d.end||'sem endereço'}</li>`).join('')}</ul><button id="ciente">Ciente</button></div>`;
  const tv=novos.some(d=>!d.ok),cor=tv?'#e5121c':'#12a05a';m.style.background=tv?'rgba(40,0,0,.78)':'rgba(0,35,15,.78)';const bx=m.querySelector('.box');bx.style.borderColor=cor;bx.style.animation='none';m.querySelector('.big').style.color=cor;m.querySelector('button').style.background=cor;m.querySelector('.big').textContent=tv?'🚨 ALERTA VERMELHO':'🟢 ALERTA VERDE';
- document.body.appendChild(m);bip();
+ document.body.appendChild(m);bip();notificar(novos);
  let on=false;tit=setInterval(()=>{document.title=(on=!on)?'🚨 ALERTA · Pedido 4450':'Pedido 4450 · Minerva'},800);
  document.getElementById('ciente').onclick=()=>{novos.forEach(d=>ack[d.id]=d.uc);try{localStorage.setItem('m4450_ack',JSON.stringify(ack))}catch(e){};m.remove();clearInterval(tit);document.title='Pedido 4450 · Minerva Rolim de Moura'};
 }
-const PERIODO=60;let falta=PERIODO,busy=false;
+const PERIODO=60;let falta=PERIODO,busy=false,ultT=Date.now();
 async function atualizar(manual){
  if(busy)return;busy=true;const bt=document.getElementById('bAtu');bt.textContent='↻ Atualizando...';
  try{
@@ -286,14 +301,14 @@ async function atualizar(manual){
   const nd=await abrir(SENHA,b);
   montar(nd,{t:LASTT});alertas(nd);ULT=new Date();
  }catch(e){bt.textContent='↻ Falhou · tentar de novo'}
- busy=false;falta=PERIODO;
+ busy=false;falta=PERIODO;ultT=Date.now();
 }
 function tic(){
  const bt=document.getElementById('bAtu');
  if(!busy){const mm=Math.floor(falta/60),ss=String(falta%60).padStart(2,'0');bt.textContent='↻ Atualizar agora · próxima em '+mm+':'+ss}
- if(--falta<0)atualizar(false);
+ falta=PERIODO-Math.floor((Date.now()-ultT)/1000);if(falta<=0)atualizar(false);
 }
-document.getElementById('bAtu').onclick=()=>atualizar(true);
+document.getElementById('bAtu').onclick=()=>atualizar(true);document.getElementById('bNot').onclick=pedirNotif;atualizaBotNot();
 montar(data);alertas(data);ULT=new Date();
 setInterval(tic,1000);
 })();
