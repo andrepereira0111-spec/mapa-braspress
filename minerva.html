@@ -241,6 +241,7 @@ window.onresize=()=>home();
 }
 
 // ---------- alertas e atualizacao ----------
+function fmtD(s){return s?s.slice(8,10)+'/'+s.slice(5,7)+' '+s.slice(11):'–'}
 function bip(){try{const c=new (window.AudioContext||window.webkitAudioContext)();[0,.35,.7].forEach(t=>{const o=c.createOscillator(),g=c.createGain();o.type='square';o.frequency.value=880;g.gain.value=.15;o.connect(g);g.connect(c.destination);o.start(c.currentTime+t);o.stop(c.currentTime+t+.22)})}catch(e){}}
 let tit=null;
 function alertas(data){
