@@ -47,6 +47,11 @@ input{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--lin
 .lbl{font-family:"Share Tech",monospace;fill:#fff;paint-order:stroke;stroke:#021a3a;stroke-linejoin:round;pointer-events:none}
 .outline{vector-effect:non-scaling-stroke}
 .pulse{animation:pl 1.4s ease-in-out infinite}@keyframes pl{50%{opacity:.25}}
+#alertbar{display:none;position:absolute;left:50%;top:14px;transform:translateX(-50%);z-index:6;background:#b3141c;border:2px solid #ff8a8a;border-radius:14px;padding:10px 18px;gap:4px;flex-direction:column;align-items:center;cursor:pointer;animation:al 1s ease-in-out infinite;max-width:60%;font-size:13px;text-align:center}@keyframes al{50%{background:#ff2a35}}
+#alertmodal{position:fixed;inset:0;z-index:10000;background:rgba(40,0,0,.78);display:flex;align-items:center;justify-content:center}
+#alertmodal .box{background:#fff;color:#400;border:6px solid #e5121c;border-radius:20px;padding:26px 34px;max-width:min(560px,92vw);animation:al2 .8s ease-in-out infinite}@keyframes al2{50%{border-color:#ff9aa0}}
+#alertmodal .big{font:700 40px Saira,sans-serif;color:#e5121c}#alertmodal ul{padding-left:18px;font-size:15px}
+#alertmodal button{margin-top:10px;padding:12px 28px;border:0;border-radius:10px;background:#e5121c;color:#fff;font:700 16px Inter,sans-serif;cursor:pointer}
 @media(max-width:900px){.app{grid-template-columns:1fr;grid-template-rows:auto 55vh 1fr}header{grid-column:1}.kpis{display:none}#mapwrap,aside{grid-column:1}#mapwrap{grid-row:2}aside{grid-row:3}}
 </style>
 </head>
@@ -69,7 +74,8 @@ input{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--lin
 </aside>
 <div id="mapwrap">
 <svg id="map" role="img" aria-label="Mapa do pedido 4450"></svg>
-<div class="mb"><button id="bTrilha">✈ Trajeto da isca ligada</button><button id="bBr">⌂ Brasil inteiro</button></div>
+<div class="mb"><button id="bTrilha">✈ Trajeto da isca ligada</button><button id="bBr">⌂ Brasil inteiro</button><button id="bAtu">↻ Atualizar agora</button></div>
+<div id="alertbar"></div>
 <div class="zoomctl"><button id="zin">+</button><button id="zout">−</button></div>
 <div class="legend">
 <div><span class="dot" style="background:var(--ok)"></span>Confirmada no cliente</div>
@@ -101,9 +107,11 @@ let sv='';try{sv=localStorage.getItem('mapa_s')||''}catch(e){}
 let erro='';
 while(!data){
  const senha=sv||await pedir(erro);sv='';
- try{ data=await abrir(senha,blob); try{localStorage.setItem('mapa_s',senha)}catch(e){} }catch(e){ erro='Senha incorreta.'; try{localStorage.removeItem('mapa_s')}catch(x){} }
+ try{ data=await abrir(senha,blob); SENHA=senha; try{localStorage.setItem('mapa_s',senha)}catch(e){} }catch(e){ erro='Senha incorreta.'; try{localStorage.removeItem('mapa_s')}catch(x){} }
 }
+let FIL='all',SEL=null,LASTT=null,SENHA='',ULT=null;
 const OK='#2fd37b',BAD='#ff4d4d',AM='#f59f0a';
+function montar(data,keep){
 const REF=new Date(data.gerado.replace(' ','T')).getTime();
 const fmtD=s=>s?s.slice(8,10)+'/'+s.slice(5,7)+' '+s.slice(11):'–';
 const dias=s=>s?(REF-new Date(s.replace(' ','T')).getTime())/864e5:null;
@@ -117,7 +125,7 @@ const W=1000,H=1000,LON0=-74.2,LON1=-34.6,LAT0=-34,LAT1=5.6,K=Math.cos(-14*Math.
 const S=Math.min((W-40)/((LON1-LON0)*K),(H-40)/(LAT1-LAT0));
 const OX=(W-(LON1-LON0)*K*S)/2,OY=(H-(LAT1-LAT0)*S)/2;
 const px=(lon,lat)=>[OX+(lon-LON0)*K*S,OY+(LAT1-lat)*S];
-const svg=d3.select('#map'),root=svg.append('g');
+const svg=d3.select('#map');svg.selectAll('*').remove();const root=svg.append('g');
 root.append('path').attr('d','M'+data.o.map(p=>px(p[0],p[1]).join(' ')).join('L')+'Z').attr('fill','#0d3a74').attr('fill-opacity',.45).attr('stroke','#4a8cda').attr('stroke-opacity',.6).attr('class','outline');
 (data.s||[]).forEach(e=>{const d=e[4].map(r=>{let o='M';for(let i=0;i<r.length;i+=2){const[x,y]=px(r[i],r[i+1]);o+=(i?'L':'')+x.toFixed(1)+' '+y.toFixed(1)}return o+'Z'}).join('');
  root.append('path').attr('d',d).attr('fill','none').attr('stroke','#7fb6ee').attr('stroke-opacity',.6).attr('class','outline');e.xy=px(e[2],e[3])});
@@ -151,13 +159,12 @@ pts.append('text').attr('class','cnt').attr('text-anchor','middle').attr('dy','.
 pts.on('click',(ev,g)=>{ev.stopPropagation();selectItem(g.items[0],g)});
 
 let k=1;
-const zoom=d3.zoom().scaleExtent([1,800]).on('zoom',ev=>{k=ev.transform.k;root.attr('transform',ev.transform);restyle()});
+const zoom=d3.zoom().scaleExtent([1,800]).on('zoom',ev=>{k=ev.transform.k;LASTT=ev.transform;root.attr('transform',ev.transform);restyle()});
 svg.call(zoom).on('dblclick.zoom',null);
 const fit=()=>{const r=svg.node().getBoundingClientRect();return Math.min(r.width,r.height)/W};
 function toView(x,y,kk,dur=900){const r=svg.node().getBoundingClientRect();svg.transition().duration(dur).ease(d3.easeCubicInOut).call(zoom.transform,d3.zoomIdentity.translate(r.width/2,r.height/2).scale(kk).translate(-x,-y))}
 function fitBox(xs,ys,dur=1000){const x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys);const r=svg.node().getBoundingClientRect();const bw=Math.max(x1-x0,20),bh=Math.max(y1-y0,20);toView((x0+x1)/2,(y0+y1)/2,Math.min(0.78*Math.min(r.width/bw,r.height/bh),fit()*150),dur)}
 const home=()=>toView(W/2,H/2,fit());
-let FIL='all',SEL=null;
 const match=d=>FIL==='all'||(FIL==='ok'?d.ok:FIL==='bad'?!d.ok:FIL==='lig'?d.lig:FIL==='sem'?d.sem:true);
 function restyle(){
  const f=fit(),z=k/f;
@@ -173,9 +180,9 @@ function restyle(){
  mk.selectAll('text').attr('font-size',13/k*f*1.6).attr('stroke-width',3/k*f*1.6).attr('dx',12/k*f*1.6).attr('dy',-8/k*f*1.6);
  stT.attr('font-size',12/k).attr('stroke-width',3/k).style('display',z<14?null:'none').text(e=>z<5?e[1]:e[0]);
 }
-const filt=document.getElementById('filters');
+const filt=document.getElementById('filters');filt.innerHTML='';
 const FS=[['all','Todas',D.length],['ok','Confirmadas no cliente',D.filter(d=>d.ok).length],['bad','Não encontradas',D.filter(d=>!d.ok).length],['lig','Ligada',1],['sem','Sem sinal +3 dias',D.filter(d=>d.sem).length]];
-FS.forEach(([v,n,c])=>{const b=document.createElement('button');b.textContent=n+' · '+c;if(v==='all')b.classList.add('on');b.onclick=()=>{[...filt.children].forEach(x=>x.classList.remove('on'));b.classList.add('on');FIL=v;document.getElementById('q').value='';restyle();render();const m=D.filter(d=>match(d)&&d.lat!=null);if(m.length)fitBox(m.map(d=>d.xy[0]).concat(v==='all'||v==='ok'||v==='lig'?T.map(p=>p.xy[0]):[]),m.map(d=>d.xy[1]).concat(v==='all'||v==='ok'||v==='lig'?T.map(p=>p.xy[1]):[]))};filt.appendChild(b)});
+FS.forEach(([v,n,c])=>{const b=document.createElement('button');b.textContent=n+' · '+c;if(v===FIL)b.classList.add('on');b.onclick=()=>{[...filt.children].forEach(x=>x.classList.remove('on'));b.classList.add('on');FIL=v;document.getElementById('q').value='';restyle();render();const m=D.filter(d=>match(d)&&d.lat!=null);if(m.length)fitBox(m.map(d=>d.xy[0]).concat(v==='all'||v==='ok'||v==='lig'?T.map(p=>p.xy[0]):[]),m.map(d=>d.xy[1]).concat(v==='all'||v==='ok'||v==='lig'?T.map(p=>p.xy[1]):[]))};filt.appendChild(b)});
 function render(){
  const q=document.getElementById('q').value.trim();
  let a=D.filter(d=>match(d)&&(!q||d.id.includes(q)||d.chip.includes(q)));
@@ -205,15 +212,56 @@ function selectItem(d,g){
  if(d.lig&&T.length){fitBox(T.map(p=>p.xy[0]).concat([oxy[0],dxy[0]]),T.map(p=>p.xy[1]).concat([oxy[1],dxy[1]]))}
  else if(d.lat!=null){toView(d.xy[0],d.xy[1],Math.max(k,fit()*60))}
 }
-document.getElementById('q').addEventListener('input',()=>{render()});
+document.getElementById('q').oninput=()=>render();
 document.getElementById('bTrilha').onclick=()=>{const d=D.find(x=>x.lig);if(d)selectItem(d)};
 document.getElementById('bBr').onclick=home;
 d3.select('#zin').on('click',()=>svg.transition().duration(400).call(zoom.scaleBy,2));
 d3.select('#zout').on('click',()=>svg.transition().duration(400).call(zoom.scaleBy,.5));
 svg.on('click',ev=>{const[x,y]=d3.pointer(ev,root.node());toView(x,y,Math.min(k*3.2,fit()*600),800)});
-render();restyle();home();
-window.addEventListener('resize',()=>home());
-setTimeout(home,100);
+render();restyle();if(SEL){const d=D.find(x=>x.id===SEL);if(d)detail(d)}
+if(keep&&keep.t)svg.call(zoom.transform,keep.t);else{home();setTimeout(home,100)}
+window.onresize=()=>home();
+}
+
+// ---------- alertas e atualizacao ----------
+function bip(){try{const c=new (window.AudioContext||window.webkitAudioContext)();[0,.35,.7].forEach(t=>{const o=c.createOscillator(),g=c.createGain();o.type='square';o.frequency.value=880;g.gain.value=.15;o.connect(g);g.connect(c.destination);o.start(c.currentTime+t);o.stop(c.currentTime+t+.22)})}catch(e){}}
+let tit=null;
+function alertas(data){
+ const lim=data.alerta_desde||'9999';
+ const A=data.itens.filter(d=>!d.ok&&d.uc&&d.uc>=lim);
+ const bn=document.getElementById('alertbar');
+ bn.style.display=A.length?'flex':'none';
+ bn.innerHTML=A.length?`<b>🚨 ${A.length} isca(s) NÃO ENCONTRADA(S) estão comunicando</b><span>${A.map(d=>d.id).join(' · ')}</span>`:'';
+ bn.onclick=()=>{FIL='bad';document.querySelectorAll('#filters button')[2].click()};
+ let ack={};try{ack=JSON.parse(localStorage.getItem('m4450_ack')||'{}')}catch(e){}
+ const novos=A.filter(d=>ack[d.id]!==d.uc);
+ clearInterval(tit);document.title='Pedido 4450 · Minerva Rolim de Moura';
+ const old=document.getElementById('alertmodal');if(old)old.remove();
+ if(!novos.length)return;
+ const m=document.createElement('div');m.id='alertmodal';
+ m.innerHTML=`<div class="box"><div class="big">🚨 ALERTA</div><p>${novos.length===1?'Uma isca que não tínhamos localizado começou a comunicar':novos.length+' iscas que não tínhamos localizado estão comunicando'}:</p><ul>${novos.map(d=>`<li><b>${d.id}</b> · ${fmtD(d.uc)} · ${d.end||'sem endereço'}</li>`).join('')}</ul><button id="ciente">Ciente</button></div>`;
+ document.body.appendChild(m);bip();
+ let on=false;tit=setInterval(()=>{document.title=(on=!on)?'🚨 ALERTA · Pedido 4450':'Pedido 4450 · Minerva'},800);
+ document.getElementById('ciente').onclick=()=>{novos.forEach(d=>ack[d.id]=d.uc);try{localStorage.setItem('m4450_ack',JSON.stringify(ack))}catch(e){};m.remove();clearInterval(tit);document.title='Pedido 4450 · Minerva Rolim de Moura'};
+}
+const PERIODO=600;let falta=PERIODO,busy=false;
+async function atualizar(manual){
+ if(busy)return;busy=true;const bt=document.getElementById('bAtu');bt.textContent='↻ Atualizando...';
+ try{
+  const b=(await fetch('minerva.enc?t='+Date.now(),{cache:'no-store'}).then(r=>{if(!r.ok)throw 0;return r.text()})).trim();
+  const nd=await abrir(SENHA,b);
+  montar(nd,{t:LASTT});alertas(nd);ULT=new Date();
+ }catch(e){bt.textContent='↻ Falhou · tentar de novo'}
+ busy=false;falta=PERIODO;
+}
+function tic(){
+ const bt=document.getElementById('bAtu');
+ if(!busy){const mm=Math.floor(falta/60),ss=String(falta%60).padStart(2,'0');bt.textContent='↻ Atualizar agora · próxima em '+mm+':'+ss}
+ if(--falta<0)atualizar(false);
+}
+document.getElementById('bAtu').onclick=()=>atualizar(true);
+montar(data);alertas(data);ULT=new Date();
+setInterval(tic,1000);
 })();
 </script>
 </body>
