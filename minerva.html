@@ -29,7 +29,11 @@ aside{grid-column:1;grid-row:2;background:#04224a;border-right:1px solid var(--l
 .leaflet-tooltip.rua{background:#fff;color:#021a3a;border:1px solid #0058C8;font:600 12px Inter,sans-serif;padding:2px 7px;box-shadow:0 1px 4px rgba(0,0,0,.3)}
 .leaflet-tooltip.par{background:#021a3a;color:#fff;border:1px solid #f59f0a;font:600 12px Inter,sans-serif}
 .lowz .leaflet-tooltip.rua{display:none}
-.leaflet-control-layers{border:1px solid #0058C8!important}
+.leaflet-tile-pane .osm{filter:invert(1) hue-rotate(205deg) saturate(1.3) brightness(.92) contrast(.95)}
+.leaflet-tile-pane .sat{filter:saturate(.7) brightness(.8) hue-rotate(-8deg)}
+.leaflet-container{background:#0d3a74}
+.leaflet-control-layers,.leaflet-bar a{background:#021a3a!important;color:#fff!important;border-color:#2e4766!important}
+.leaflet-control-attribution{background:rgba(2,26,58,.7)!important;color:#b9c6d8!important}.leaflet-control-attribution a{color:#7fb6ee!important}
 
 .sec{padding:14px 18px;border-bottom:1px solid var(--line)}
 .sec h3{margin:0 0 10px;font-family:"Share Tech",monospace;font-weight:400;font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--sky)}
@@ -49,16 +53,16 @@ input{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--lin
 .item:hover,.item.sel{background:#0d3a74}
 .item .t{font-family:"Share Tech",monospace;font-size:15px}.item .s{font-size:12px;color:var(--muted)}.item .c{font-size:12px;color:var(--muted);text-align:right}
 .dot{width:12px;height:12px;border-radius:50%;display:inline-block}
-.mb{position:absolute;left:16px;top:16px;display:flex;flex-direction:column;gap:8px;z-index:5}
+.mb{position:absolute;left:16px;top:16px;display:flex;flex-direction:column;gap:8px;z-index:1000}
 .mb button,.zoomctl button{border:1px solid var(--line);background:rgba(2,26,58,.88);color:#fff;border-radius:10px;cursor:pointer;font:600 13px Inter,sans-serif;padding:10px 14px;text-align:left}
 .mb button:hover,.zoomctl button:hover{background:var(--blue)}
 .zoomctl{position:absolute;right:16px;top:16px;display:flex;flex-direction:column;gap:6px}.zoomctl button{width:40px;height:40px;font-size:20px;padding:0;text-align:center}
-.legend{position:absolute;left:16px;bottom:16px;display:flex;flex-direction:column;gap:5px;font-size:12.5px;background:rgba(2,26,58,.8);padding:10px 12px;border-radius:12px;border:1px solid var(--line)}
+.legend{z-index:1000;position:absolute;left:16px;bottom:16px;display:flex;flex-direction:column;gap:5px;font-size:12.5px;background:rgba(2,26,58,.8);padding:10px 12px;border-radius:12px;border:1px solid var(--line)}
 .legend div{display:flex;align-items:center;gap:8px}
 .lbl{font-family:"Share Tech",monospace;fill:#fff;paint-order:stroke;stroke:#021a3a;stroke-linejoin:round;pointer-events:none}
 .outline{vector-effect:non-scaling-stroke}
 .pulse{animation:pl 1.4s ease-in-out infinite}@keyframes pl{50%{opacity:.25}}
-#alertbar{display:none;position:absolute;left:50%;top:14px;transform:translateX(-50%);z-index:6;background:#b3141c;border:2px solid #ff8a8a;border-radius:14px;padding:10px 18px;gap:4px;flex-direction:column;align-items:center;cursor:pointer;animation:al 1s ease-in-out infinite;max-width:60%;font-size:13px;text-align:center}@keyframes al{50%{background:#ff2a35}}@keyframes alg{50%{background:#18b86a}}
+#alertbar{display:none;position:absolute;left:50%;top:14px;transform:translateX(-50%);z-index:1001;background:#b3141c;border:2px solid #ff8a8a;border-radius:14px;padding:10px 18px;gap:4px;flex-direction:column;align-items:center;cursor:pointer;animation:al 1s ease-in-out infinite;max-width:60%;font-size:13px;text-align:center}@keyframes al{50%{background:#ff2a35}}@keyframes alg{50%{background:#18b86a}}
 #alertmodal{position:fixed;inset:0;z-index:10000;background:rgba(40,0,0,.78);display:flex;align-items:center;justify-content:center}
 #alertmodal .box{background:#fff;color:#400;border:6px solid #e5121c;border-radius:20px;padding:26px 34px;max-width:min(560px,92vw);animation:al2 .8s ease-in-out infinite}@keyframes al2{50%{border-color:#ff9aa0}}
 #alertmodal .big{font:700 40px Saira,sans-serif;color:#e5121c}#alertmodal ul{padding-left:18px;font-size:15px}
@@ -140,14 +144,18 @@ document.getElementById('sub').textContent='Minerva · Rolim de Moura (RO) · at
 if(!MAPA){
  MAPA=L.map('map',{zoomControl:false,zoomSnap:.5}).setView([-11.7,-61.7],6);
  L.control.zoom({position:'bottomright'}).addTo(MAPA);
- const ruas=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(MAPA);
- const sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Imagens © Esri'});
+ const ruas=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{className:'osm',maxZoom:19,attribution:'© OpenStreetMap'}).addTo(MAPA);
+ const sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{className:'sat',maxZoom:19,attribution:'Imagens © Esri'});
  L.control.layers({'Mapa (ruas)':ruas,'Satélite':sat},null,{position:'bottomright'}).addTo(MAPA);
  GI=L.layerGroup().addTo(MAPA);GTL=L.layerGroup().addTo(MAPA);GTR=L.layerGroup().addTo(MAPA);GBU=L.layerGroup().addTo(MAPA);
  const lz=()=>document.getElementById('map').classList.toggle('lowz',MAPA.getZoom()<11);MAPA.on('zoomend',lz);lz();
  MAPA.on('click',()=>{});
 }
 [GI,GTL,GTR,GBU].forEach(g=>g.clearLayers());
+if(!window.CONT){window.CONT=L.layerGroup().addTo(MAPA);CONT.setZIndex&&0;
+ L.polygon(data.o.map(q=>[q[1],q[0]]),{color:'#4a8cda',weight:2,opacity:.9,fill:false,interactive:false}).addTo(CONT);
+ (data.s||[]).forEach(e=>e[4].forEach(r=>{const pts=[];for(let i=0;i<r.length;i+=2)pts.push([r[i+1],r[i]]);L.polygon(pts,{color:'#7fb6ee',weight:1,opacity:.7,fill:false,interactive:false}).addTo(CONT)}));
+}
 const ll=d=>[d.lat,d.lon];
 const T=data.trilha.map(p=>({t:p[0],lat:p[1],lon:p[2],v:p[3],ig:p[4],e:p[5]}));
 const VOO=new Set(data.voo||[]);
