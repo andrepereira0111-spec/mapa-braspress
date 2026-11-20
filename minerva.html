@@ -61,6 +61,7 @@ input{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--lin
 <div class="brand"><b>PEDIDO 4450</b><span id="sub">Minerva · Rolim de Moura (RO)</span></div>
 <div class="kpis">
 <div class="kpi"><div class="v" id="kTot">–</div><div class="l">iscas do pedido</div></div>
+<div class="kpi"><div class="v" id="kLista" style="color:var(--amber)">–</div><div class="l">já na lista do Sitalcom</div></div>
 <div class="kpi"><div class="v" id="kOk" style="color:var(--ok)">–</div><div class="l">confirmadas no cliente</div></div>
 <div class="kpi"><div class="v" id="kBad" style="color:var(--bad)">–</div><div class="l">não encontradas</div></div>
 </div>
@@ -120,6 +121,7 @@ const dcal=s=>{if(!s)return null;const a=new Date(data.gerado.slice(0,10)+'T00:0
 const rel=s=>{const n=dcal(s);return n==null?'sem registro':n<=0?'hoje':n===1?'ontem':'há '+n+' dias'};
 const D=data.itens;D.forEach(d=>{d.dias=dias(d.uc);d.rolim=!d.ok&&d.uc>='2026-11-19'&&d.lat!=null;d.sem=d.dias!=null&&d.dias>3});
 document.getElementById('kTot').textContent=D.length;
+document.getElementById('kLista').textContent=D.filter(d=>d.lat!=null).length+' de '+D.length;document.getElementById('kLista').title='Cliente MINERVA - ROLIM DE MOURA - RO no Sitalcom: '+data.cli_tot+' veículos ('+data.cli_sz+' SZ One)';
 document.getElementById('kOk').textContent=D.filter(d=>d.ok).length;
 document.getElementById('kBad').textContent=D.filter(d=>!d.ok).length;
 document.getElementById('sub').textContent='Minerva · Rolim de Moura (RO) · atualizado em '+data.gerado.slice(8,10)+'/'+data.gerado.slice(5,7)+' às '+data.gerado.slice(11);
