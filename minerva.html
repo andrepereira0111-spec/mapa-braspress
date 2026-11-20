@@ -260,7 +260,7 @@ function alertas(data){
  const old=document.getElementById('alertmodal');if(old)old.remove();
  if(!novos.length)return;
  const m=document.createElement('div');m.id='alertmodal';
- m.innerHTML=`<div class="box"><div class="big">🚨 ALERTA</div><p>${novos.length===1?'Uma isca ligou após a entrega':novos.length+' iscas ligaram após a entrega (19/11 17:30)'}:</p><ul>${novos.map(d=>`<li><b>${d.id}</b> <span class="pill ${d.ok?'v':'r'}">${d.ok?'CONFIRMADA':'NÃO ENCONTRADA'}</span> · ${fmtD(d.uc)} · ${d.end||'sem endereço'}</li>`).join('')}</ul><button id="ciente">Ciente</button></div>`;
+ m.innerHTML=`<div class="box"><div class="big">🚨 ALERTA</div><p>${novos.length===1?'Uma isca ligou após a entrega':novos.length+' iscas ligaram após a entrega (19/11 17:30)'}:</p><ul>${[...novos].sort((x,y)=>(x.ok-y.ok)).map(d=>`<li style="color:${d.ok?'#0b7a43':'#b3141c'}"><b>${d.id}</b> <span class="pill ${d.ok?'v':'r'}">${d.ok?'CONFIRMADA':'NÃO ENCONTRADA'}</span> · ${fmtD(d.uc)} · ${d.end||'sem endereço'}</li>`).join('')}</ul><button id="ciente">Ciente</button></div>`;
  const tv=novos.some(d=>!d.ok),cor=tv?'#e5121c':'#12a05a';m.style.background=tv?'rgba(40,0,0,.78)':'rgba(0,35,15,.78)';const bx=m.querySelector('.box');bx.style.borderColor=cor;bx.style.animation='none';m.querySelector('.big').style.color=cor;m.querySelector('button').style.background=cor;m.querySelector('.big').textContent=tv?'🚨 ALERTA VERMELHO':'🟢 ALERTA VERDE';
  document.body.appendChild(m);bip();
  let on=false;tit=setInterval(()=>{document.title=(on=!on)?'🚨 ALERTA · Pedido 4450':'Pedido 4450 · Minerva'},800);
