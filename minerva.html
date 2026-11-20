@@ -115,6 +115,8 @@ function montar(data,keep){
 const REF=new Date(data.gerado.replace(' ','T')).getTime();
 const fmtD=s=>s?s.slice(8,10)+'/'+s.slice(5,7)+' '+s.slice(11):'–';
 const dias=s=>s?(REF-new Date(s.replace(' ','T')).getTime())/864e5:null;
+const dcal=s=>{if(!s)return null;const a=new Date(data.gerado.slice(0,10)+'T00:00'),b=new Date(s.slice(0,10)+'T00:00');return Math.round((a-b)/864e5)};
+const rel=s=>{const n=dcal(s);return n==null?'sem registro':n<=0?'hoje':n===1?'ontem':'há '+n+' dias'};
 const D=data.itens;D.forEach(d=>{d.dias=dias(d.uc);d.rolim=!d.ok&&d.uc>='2026-11-19'&&d.lat!=null;d.sem=d.dias!=null&&d.dias>3});
 document.getElementById('kTot').textContent=D.length;
 document.getElementById('kOk').textContent=D.filter(d=>d.ok).length;
@@ -191,7 +193,7 @@ function render(){
  document.getElementById('lc').textContent=a.length+' iscas';
  const L=document.getElementById('list');L.innerHTML='';
  a.forEach(d=>{const el=document.createElement('div');el.className='item'+(SEL===d.id?' sel':'');
-  const du=d.dias==null?'sem registro':(d.dias<1?'hoje':Math.floor(d.dias)+' dias sem sinal');
+  const du=d.uc?rel(d.uc):'sem registro';
   el.innerHTML=`<span class="dot" style="background:${d.ok?OK:BAD}"></span><div><div class="t">${d.id}${d.lig?' · LIGADA':''}${d.rolim?' · sinal em Rolim':''}</div><div class="s">${d.chip}</div></div><div class="c">${fmtD(d.uc)}<br>${du}</div>`;
   el.onclick=()=>selectItem(d);L.appendChild(el)});
 }
@@ -200,7 +202,7 @@ function detail(d){
  let h=`<div class="id">${d.id} <span class="pill ${d.ok?'v':'r'}">${d.ok?'CONFIRMADA':'NÃO ENCONTRADA'}</span></div>
  <p>Número de 16 dígitos: <b>${d.chip}</b></p>
  <p>Conta no Sitalcom: <b>${d.cli||'–'}</b> · <b>${d.disp||'–'}</b></p>
- <p>Última comunicação: <b>${fmtD(d.uc)}</b>${d.dias!=null?' ('+(d.dias<1?'hoje':Math.floor(d.dias)+' dias atrás')+')':''}</p>
+ <p>Última comunicação: <b>${fmtD(d.uc)}</b>${d.uc?' ('+rel(d.uc)+')':''}</p>
  ${d.bat!=null?`<p>Bateria: <b>${d.bat}%</b></p>`:''}
  <p>${d.lat!=null?'Última posição: <b>'+(d.end||'')+'</b>':'<b>Nenhuma posição registrada no Sitalcom</b>'}</p>`;
  if(d.rolim)h+='<p style="color:'+AM+'"><b style="color:'+AM+'">Comunicou em Rolim de Moura em 19/11, mesmo não tendo sido encontrada. Vale conferir de novo no cliente.</b></p>';
