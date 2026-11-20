@@ -81,6 +81,7 @@ input{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--lin
 <div><span class="dot" style="background:var(--ok)"></span>Confirmada no cliente</div>
 <div><span class="dot" style="background:var(--bad)"></span>Não encontrada no cliente</div>
 <div><span class="dot" style="background:transparent;border:2px solid var(--amber)"></span>Sinal em Rolim de Moura em 19/11</div>
+<div><span style="display:inline-block;width:22px;border-top:3px solid #ff8a8a"></span>Trajeto das não encontradas que comunicaram</div>
 <div><span style="display:inline-block;width:22px;border-top:3px solid var(--ok)"></span>Trajeto por terra</div>
 <div><span style="display:inline-block;width:22px;border-top:3px dashed var(--amber)"></span>Trecho aéreo (sem sinal)</div>
 </div>
@@ -149,6 +150,16 @@ const mkD=mk.append('g').attr('transform',`translate(${dxy})`);mkD.append('circl
 const mkOt=mk.append('text').attr('class','lbl').attr('x',oxy[0]).attr('y',oxy[1]).text('Vinhedo (origem)');
 const mkDt=mk.append('text').attr('class','lbl').attr('x',dxy[0]).attr('y',dxy[1]).text('Rolim de Moura (destino)');
 
+// trilhas das nao encontradas que comunicaram + area de busca
+const TRS=Object.entries(data.trilhas||{}).map(([id,p])=>({id,xy:p.map(q=>px(q[2],q[1])),p}));
+const trsG=root.append('g');
+const trsL=trsG.selectAll('polyline').data(TRS).join('polyline').attr('fill','none').attr('stroke','#ff8a8a').attr('stroke-linejoin','round').attr('points',t=>t.xy.map(q=>q.join(',')).join(' '));
+const fin=D.filter(d=>!d.ok&&d.rolim&&d.lat!=null);
+let busca=null;
+if(fin.length){const cx=fin.reduce((a,d)=>a+d.lon,0)/fin.length,cy=fin.reduce((a,d)=>a+d.lat,0)/fin.length;const c=px(cx,cy);busca={c,r:2.0/111*S};}
+const bG=root.append('g').style('pointer-events','none');
+const bC=busca?bG.append('circle').attr('cx',busca.c[0]).attr('cy',busca.c[1]).attr('r',busca.r).attr('fill','#ff4d4d').attr('fill-opacity',.10).attr('stroke','#ff8a8a').attr('class','pulse'):null;
+const bT=busca?bG.append('text').attr('class','lbl').attr('x',busca.c[0]).attr('y',busca.c[1]).attr('text-anchor','middle').text('PROCURAR AQUI · Av. 25 de Agosto, Rolim de Moura'):null;
 // iscas com posicao
 const withPos=D.filter(d=>d.lat!=null);withPos.forEach(d=>{d.xy=px(d.lon,d.lat)});
 const grp=new Map();withPos.forEach(d=>{const k=d.lat.toFixed(3)+','+d.lon.toFixed(3);if(!grp.has(k))grp.set(k,{xy:d.xy,items:[]});grp.get(k).items.push(d)});
@@ -176,6 +187,8 @@ function restyle(){
  pts.select('.ringr').style('display',g=>g.items.some(i=>i.rolim)?null:'none').attr('class',g=>'ringr'+(g.items.some(i=>i.rolim)?' pulse':'')).attr('stroke-width',2.4/k).attr('r',g=>(12+Math.sqrt(g.items.length)*2.6)/k*f*1.6);
  pts.select('.cnt').text(g=>g.items.length>1?g.items.length:'').style('font-size',g=>(Math.sqrt(g.items.length)*1.2+7)/k*f*1.6+'px').style('display',z>5?null:'none');
  const showT=FIL==='all'||FIL==='ok'||FIL==='lig';trG.style('display',showT?null:'none');
+ trsG.style('display',FIL==='all'||FIL==='bad'?null:'none');trsL.attr('stroke-width',(z<6?1.6:1.3)/k*f*1.6).attr('stroke-opacity',.8);
+ if(bC){bT.attr('font-size',13/k*f*1.6).attr('stroke-width',3/k*f*1.6).attr('dy',-(busca.r+6/k*f*1.6));bC.attr('stroke-width',2/k*f*1.6);bG.style('display',FIL==='all'||FIL==='bad'?null:'none')}
  sl.attr('stroke-width',(z<6?2.4:2)/k*f*1.6).attr('stroke-dasharray',s=>s.voo||s.o||s.d?`${7/k*f*1.6} ${6/k*f*1.6}`:null);
  tp.attr('r',2.4/k*f*1.6).attr('stroke-width',.8/k*f*1.6).style('display',z>2?null:'none');
  mkO.select('circle').attr('r',6/k*f*1.6).attr('stroke-width',1.4/k);mkD.select('circle').attr('r',10/k*f*1.6).attr('stroke-width',2.4/k);
@@ -205,6 +218,8 @@ function detail(d){
  <p>Última comunicação: <b>${fmtD(d.uc)}</b>${d.uc?' ('+rel(d.uc)+')':''}</p>
  ${d.bat!=null?`<p>Bateria: <b>${d.bat}%</b></p>`:''}
  <p>${d.lat!=null?'Última posição: <b>'+(d.end||'')+'</b>':'<b>Nenhuma posição registrada no Sitalcom</b>'}</p>`;
+ const tr=(data.trilhas||{})[d.id];
+ if(tr&&tr.length){const a=tr[0],b=tr[tr.length-1];const vp=a[1]>-9.1&&a[1]<-8.4&&a[2]<-63.5;h+=`<p style="margin-top:8px"><b>Pista</b></p><p>${vp?'Começou a comunicar em <b>Porto Velho (RO), '+fmtD(a[0])+'</b>, no mesmo ponto onde a isca ligada ficou parada. ':'Primeiro registro: <b>'+fmtD(a[0])+'</b>. '}Seguiu a BR-364 e <b>parou de comunicar em '+fmtD(b[0])+'</b>, perto da posição marcada no mapa. ${tr.length} posições no histórico.</p>`}
  if(d.rolim)h+='<p style="color:'+AM+'"><b style="color:'+AM+'">Comunicou em Rolim de Moura em 19/11, mesmo não tendo sido encontrada. Vale conferir de novo no cliente.</b></p>';
  if(d.lig){const r=data.resumo||{};h+=`<p style="margin-top:8px"><b>Trajeto (${data.trilha.length} posições válidas)</b></p><ul class="tl">`+data.paradas.filter(p=>p.n>=2||p.mov).map(p=>`<li><b>${p.lugar}</b><br>${fmtD(p.ini)}${p.fim!==p.ini?' → '+fmtD(p.fim):''} · ${p.n} posições</li>`).join('')+`</ul><p style="font-size:12px">Trechos tracejados em laranja: ela foi de avião, então os saltos entre Campinas, Brasília e Porto Velho são esperados. Descartadas: ${r.semgps||0} sem GPS (0,0) e ${r.duplicadas||0} duplicadas.</p>`}
  el.innerHTML=h;
