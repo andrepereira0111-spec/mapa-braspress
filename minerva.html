@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pedido 4450 · Minerva Rolim de Moura</title>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Dots&family=Saira:wght@500;600;700&family=Share+Tech&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<style>
+:root{--navy:#032c5f;--deep:#021a3a;--blue:#0059c8;--sky:#1ca4f2;--amber:#f59f0a;--muted:#b9c6d8;--line:#2e4766;--ok:#2fd37b;--bad:#ff4d4d}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--deep);color:#fff;font-family:Inter,system-ui,sans-serif}
+.app{display:grid;grid-template-columns:400px 1fr;grid-template-rows:auto 1fr;height:100vh}
+header{grid-column:1/3;display:flex;align-items:center;justify-content:space-between;gap:24px;padding:16px 28px;background:linear-gradient(135deg,#0a3670,#032c5f 45%,#021a3a);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap}
+.brand b{font-family:"Zen Dots",sans-serif;font-weight:400;font-size:24px;letter-spacing:.04em}
+.brand span{font-family:"Share Tech",monospace;color:var(--sky);letter-spacing:.14em;text-transform:uppercase;font-size:13px}
+.kpis{display:flex;gap:28px}
+.kpi{text-align:right}.kpi .v{font-family:Saira,sans-serif;font-weight:700;font-size:26px;line-height:1}.kpi .l{font-size:12px;color:var(--muted)}
+aside{grid-column:1;grid-row:2;background:#04224a;border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0;overflow:hidden}
+#mapwrap{grid-column:2;grid-row:2;position:relative;overflow:hidden;background:radial-gradient(circle at 60% 55%,#0a3670 0%,#032c5f 45%,#021a3a 100%)}
+svg{width:100%;height:100%;display:block;cursor:grab}svg:active{cursor:grabbing}
+.sec{padding:14px 18px;border-bottom:1px solid var(--line)}
+.sec h3{margin:0 0 10px;font-family:"Share Tech",monospace;font-weight:400;font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--sky)}
+.fl{display:flex;flex-wrap:wrap;gap:8px}
+.fl button{font:500 13px Inter,sans-serif;color:#fff;background:#0d3a74;border:1px solid var(--line);border-radius:999px;padding:7px 13px;cursor:pointer}
+.fl button:hover,.fl button.on{background:var(--blue);border-color:var(--blue)}
+input{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:#021a3a;color:#fff;font:14px Inter,sans-serif}
+#detail{display:none;margin:10px 12px 0;background:#0d3a74;border:1px solid var(--sky);border-radius:14px;padding:14px;max-height:46%;overflow:auto}
+#detail .id{font-family:"Share Tech",monospace;font-size:22px}
+#detail p{margin:4px 0;font-size:13px;color:var(--muted)}#detail p b{color:#fff;font-weight:500}
+.pill{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.06em;padding:2px 8px;border-radius:999px;color:#021a3a}
+.pill.v{background:var(--ok)}.pill.r{background:var(--bad)}
+.tl{margin:8px 0 0;padding:0;list-style:none;font-size:12.5px}.tl li{padding:6px 0;border-top:1px solid #2e4766}.tl b{color:#fff}
+.lh{display:flex;justify-content:space-between;align-items:baseline;padding:12px 18px 4px}
+#list{flex:1;overflow:auto;padding:4px 12px 16px;min-height:140px}
+.item{display:grid;grid-template-columns:12px 1fr auto;gap:10px;align-items:center;padding:8px;border-radius:10px;cursor:pointer}
+.item:hover,.item.sel{background:#0d3a74}
+.item .t{font-family:"Share Tech",monospace;font-size:15px}.item .s{font-size:12px;color:var(--muted)}.item .c{font-size:12px;color:var(--muted);text-align:right}
+.dot{width:12px;height:12px;border-radius:50%;display:inline-block}
+.mb{position:absolute;left:16px;top:16px;display:flex;flex-direction:column;gap:8px;z-index:5}
+.mb button,.zoomctl button{border:1px solid var(--line);background:rgba(2,26,58,.88);color:#fff;border-radius:10px;cursor:pointer;font:600 13px Inter,sans-serif;padding:10px 14px;text-align:left}
+.mb button:hover,.zoomctl button:hover{background:var(--blue)}
+.zoomctl{position:absolute;right:16px;top:16px;display:flex;flex-direction:column;gap:6px}.zoomctl button{width:40px;height:40px;font-size:20px;padding:0;text-align:center}
+.legend{position:absolute;left:16px;bottom:16px;display:flex;flex-direction:column;gap:5px;font-size:12.5px;background:rgba(2,26,58,.8);padding:10px 12px;border-radius:12px;border:1px solid var(--line)}
+.legend div{display:flex;align-items:center;gap:8px}
+.lbl{font-family:"Share Tech",monospace;fill:#fff;paint-order:stroke;stroke:#021a3a;stroke-linejoin:round;pointer-events:none}
+.outline{vector-effect:non-scaling-stroke}
+.pulse{animation:pl 1.4s ease-in-out infinite}@keyframes pl{50%{opacity:.25}}
+@media(max-width:900px){.app{grid-template-columns:1fr;grid-template-rows:auto 55vh 1fr}header{grid-column:1}.kpis{display:none}#mapwrap,aside{grid-column:1}#mapwrap{grid-row:2}aside{grid-row:3}}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+<div class="brand"><b>PEDIDO 4450</b><span id="sub">Minerva · Rolim de Moura (RO)</span></div>
+<div class="kpis">
+<div class="kpi"><div class="v" id="kTot">–</div><div class="l">iscas do pedido</div></div>
+<div class="kpi"><div class="v" id="kOk" style="color:var(--ok)">–</div><div class="l">confirmadas no cliente</div></div>
+<div class="kpi"><div class="v" id="kBad" style="color:var(--bad)">–</div><div class="l">não encontradas</div></div>
+</div>
+</header>
+<aside>
+<div class="sec"><h3>Mostrar</h3><div class="fl" id="filters"></div></div>
+<div class="sec"><input id="q" placeholder="Digite o ID ou o número de 16 dígitos" autocomplete="off"></div>
+<div id="detail"></div>
+<div class="lh"><h3 id="lt" style="margin:0;font-family:'Share Tech',monospace;font-weight:400;font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--sky)">Iscas</h3><span id="lc" style="font-size:12px;color:var(--muted)"></span></div>
+<div id="list"></div>
+</aside>
+<div id="mapwrap">
+<svg id="map" role="img" aria-label="Mapa do pedido 4450"></svg>
+<div class="mb"><button id="bTrilha">✈ Trajeto da isca ligada</button><button id="bBr">⌂ Brasil inteiro</button></div>
+<div class="zoomctl"><button id="zin">+</button><button id="zout">−</button></div>
+<div class="legend">
+<div><span class="dot" style="background:var(--ok)"></span>Confirmada no cliente</div>
+<div><span class="dot" style="background:var(--bad)"></span>Não encontrada no cliente</div>
+<div><span class="dot" style="background:transparent;border:2px solid var(--amber)"></span>Sinal em Rolim de Moura em 19/11</div>
+<div><span style="display:inline-block;width:22px;border-top:3px solid var(--ok)"></span>Trajeto por terra</div>
+<div><span style="display:inline-block;width:22px;border-top:3px dashed var(--amber)"></span>Trecho aéreo (sem sinal)</div>
+</div>
+</div>
+</div>
+<script>
+(async function(){
+async function abrir(senha,blob){
+ const b=Uint8Array.from(atob(blob),c=>c.charCodeAt(0)),enc=new TextEncoder();
+ const km=await crypto.subtle.importKey('raw',enc.encode(senha),'PBKDF2',false,['deriveKey']);
+ const k=await crypto.subtle.deriveKey({name:'PBKDF2',salt:b.slice(0,16),iterations:200000,hash:'SHA-256'},km,{name:'AES-GCM',length:256},false,['decrypt']);
+ const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:b.slice(16,28)},k,b.slice(28));
+ return JSON.parse(new TextDecoder().decode(pt));
+}
+function pedir(erro){return new Promise(ok=>{
+ const o=document.createElement('div');o.style.cssText='position:fixed;inset:0;z-index:9999;background:#06224a;display:flex;align-items:center;justify-content:center;font-family:Saira,Inter,sans-serif;color:#fff';
+ o.innerHTML='<form style="background:#0b3170;padding:28px 32px;border-radius:14px;width:min(340px,86vw);display:grid;gap:12px;text-align:center"><b style="font-size:18px">Pedido 4450</b><span style="font-size:13px;opacity:.8">Digite a senha para acessar</span><input type="password" autofocus style="padding:10px;border-radius:8px;border:1px solid #1ca4f2;background:#06224a;color:#fff;font-size:15px"><span style="color:#ff8a8a;font-size:13px;min-height:16px">'+(erro||'')+'</span><button style="padding:10px;border:0;border-radius:8px;background:#1ca4f2;color:#fff;font-weight:700;font-size:15px;cursor:pointer">Entrar</button></form>';
+ document.body.appendChild(o);const i=o.querySelector('input');i.focus();
+ o.querySelector('form').onsubmit=e=>{e.preventDefault();o.remove();ok(i.value)};
+})}
+let data,blob;
+try{ blob=(await fetch('minerva.enc?t='+Date.now(),{cache:'no-store'}).then(r=>{if(!r.ok)throw 0;return r.text()})).trim(); }catch(e){ document.getElementById('list').textContent='Não foi possível carregar os dados.'; return; }
+let sv='';try{sv=localStorage.getItem('mapa_s')||''}catch(e){}
+let erro='';
+while(!data){
+ const senha=sv||await pedir(erro);sv='';
+ try{ data=await abrir(senha,blob); try{localStorage.setItem('mapa_s',senha)}catch(e){} }catch(e){ erro='Senha incorreta.'; try{localStorage.removeItem('mapa_s')}catch(x){} }
+}
+const OK='#2fd37b',BAD='#ff4d4d',AM='#f59f0a';
+const REF=new Date(data.gerado.replace(' ','T')).getTime();
+const fmtD=s=>s?s.slice(8,10)+'/'+s.slice(5,7)+' '+s.slice(11):'–';
+const dias=s=>s?(REF-new Date(s.replace(' ','T')).getTime())/864e5:null;
+const D=data.itens;D.forEach(d=>{d.dias=dias(d.uc);d.rolim=!d.ok&&d.uc>='2026-11-19'&&d.lat!=null;d.sem=d.dias!=null&&d.dias>3});
+document.getElementById('kTot').textContent=D.length;
+document.getElementById('kOk').textContent=D.filter(d=>d.ok).length;
+document.getElementById('kBad').textContent=D.filter(d=>!d.ok).length;
+document.getElementById('sub').textContent='Minerva · Rolim de Moura (RO) · atualizado em '+data.gerado.slice(8,10)+'/'+data.gerado.slice(5,7)+' às '+data.gerado.slice(11);
+
+const W=1000,H=1000,LON0=-74.2,LON1=-34.6,LAT0=-34,LAT1=5.6,K=Math.cos(-14*Math.PI/180);
+const S=Math.min((W-40)/((LON1-LON0)*K),(H-40)/(LAT1-LAT0));
+const OX=(W-(LON1-LON0)*K*S)/2,OY=(H-(LAT1-LAT0)*S)/2;
+const px=(lon,lat)=>[OX+(lon-LON0)*K*S,OY+(LAT1-lat)*S];
+const svg=d3.select('#map'),root=svg.append('g');
+root.append('path').attr('d','M'+data.o.map(p=>px(p[0],p[1]).join(' ')).join('L')+'Z').attr('fill','#0d3a74').attr('fill-opacity',.45).attr('stroke','#4a8cda').attr('stroke-opacity',.6).attr('class','outline');
+(data.s||[]).forEach(e=>{const d=e[4].map(r=>{let o='M';for(let i=0;i<r.length;i+=2){const[x,y]=px(r[i],r[i+1]);o+=(i?'L':'')+x.toFixed(1)+' '+y.toFixed(1)}return o+'Z'}).join('');
+ root.append('path').attr('d',d).attr('fill','none').attr('stroke','#7fb6ee').attr('stroke-opacity',.6).attr('class','outline');e.xy=px(e[2],e[3])});
+const stT=root.append('g').style('pointer-events','none').selectAll('text').data(data.s||[]).join('text').attr('class','lbl').attr('text-anchor','middle').attr('x',e=>e.xy[0]).attr('y',e=>e.xy[1]).style('letter-spacing','.12em').style('text-transform','uppercase').attr('fill-opacity',.8);
+
+// trilha
+const T=data.trilha.map(p=>({t:p[0],lat:p[1],lon:p[2],v:p[3],ig:p[4],e:p[5],xy:px(p[2],p[1])}));
+const VOO=new Set(data.voo||[]);
+const trG=root.append('g');
+const og=data.origem,dg=data.destino_pos;const oxy=px(og.lon,og.lat),dxy=px(dg.lon,dg.lat);
+const segs=[];
+if(T.length){segs.push({a:oxy,b:T[0].xy,voo:true,o:true});for(let i=1;i<T.length;i++)segs.push({a:T[i-1].xy,b:T[i].xy,voo:VOO.has(i)});segs.push({a:T[T.length-1].xy,b:dxy,voo:false,d:true})}
+const sl=trG.selectAll('line').data(segs).join('line').attr('x1',s=>s.a[0]).attr('y1',s=>s.a[1]).attr('x2',s=>s.b[0]).attr('y2',s=>s.b[1]).attr('stroke',s=>s.voo?AM:OK).attr('stroke-opacity',s=>s.o||s.d?.5:.95).attr('stroke-linecap','round');
+const tp=trG.selectAll('circle').data(T).join('circle').attr('cx',p=>p.xy[0]).attr('cy',p=>p.xy[1]).attr('fill',OK).attr('stroke','#021a3a');
+tp.append('title').text(p=>fmtD(p.t)+' · '+p.e+' · '+p.v+' km/h');
+const mk=trG.append('g');
+const mkO=mk.append('g').attr('transform',`translate(${oxy})`);mkO.append('circle').attr('fill',AM).attr('stroke','#021a3a');
+const mkD=mk.append('g').attr('transform',`translate(${dxy})`);mkD.append('circle').attr('fill','none').attr('stroke',AM);
+const mkOt=mk.append('text').attr('class','lbl').attr('x',oxy[0]).attr('y',oxy[1]).text('Vinhedo (origem)');
+const mkDt=mk.append('text').attr('class','lbl').attr('x',dxy[0]).attr('y',dxy[1]).text('Rolim de Moura (destino)');
+
+// iscas com posicao
+const withPos=D.filter(d=>d.lat!=null);withPos.forEach(d=>{d.xy=px(d.lon,d.lat)});
+const grp=new Map();withPos.forEach(d=>{const k=d.lat.toFixed(3)+','+d.lon.toFixed(3);if(!grp.has(k))grp.set(k,{xy:d.xy,items:[]});grp.get(k).items.push(d)});
+const G=[...grp.values()];
+const pts=root.append('g').selectAll('g').data(G).join('g').attr('transform',g=>`translate(${g.xy})`).style('cursor','pointer');
+pts.append('circle').attr('class','ringr').attr('fill','none').attr('stroke',AM);
+pts.append('circle').attr('class','halo');
+pts.append('circle').attr('class','core').attr('stroke','#021a3a');
+pts.append('text').attr('class','cnt').attr('text-anchor','middle').attr('dy','.35em').attr('fill','#021a3a').style('font-family','Saira,sans-serif').style('font-weight',700);
+pts.on('click',(ev,g)=>{ev.stopPropagation();selectItem(g.items[0],g)});
+
+let k=1;
+const zoom=d3.zoom().scaleExtent([1,800]).on('zoom',ev=>{k=ev.transform.k;root.attr('transform',ev.transform);restyle()});
+svg.call(zoom).on('dblclick.zoom',null);
+const fit=()=>{const r=svg.node().getBoundingClientRect();return Math.min(r.width,r.height)/W};
+function toView(x,y,kk,dur=900){const r=svg.node().getBoundingClientRect();svg.transition().duration(dur).ease(d3.easeCubicInOut).call(zoom.transform,d3.zoomIdentity.translate(r.width/2,r.height/2).scale(kk).translate(-x,-y))}
+function fitBox(xs,ys,dur=1000){const x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys);const r=svg.node().getBoundingClientRect();const bw=Math.max(x1-x0,20),bh=Math.max(y1-y0,20);toView((x0+x1)/2,(y0+y1)/2,Math.min(0.78*Math.min(r.width/bw,r.height/bh),fit()*150),dur)}
+const home=()=>toView(W/2,H/2,fit());
+let FIL='all',SEL=null;
+const match=d=>FIL==='all'||(FIL==='ok'?d.ok:FIL==='bad'?!d.ok:FIL==='lig'?d.lig:FIL==='sem'?d.sem:true);
+function restyle(){
+ const f=fit(),z=k/f;
+ pts.style('display',g=>g.items.some(match)?null:'none');
+ pts.select('.core').attr('fill',g=>g.items.some(i=>i.ok)?OK:BAD).attr('stroke-width',1.2/k).attr('r',g=>(3.4+Math.sqrt(g.items.length)*1.4)/k*f*1.6);
+ pts.select('.halo').attr('fill',g=>g.items.some(i=>i.ok)?OK:BAD).attr('fill-opacity',.25).attr('r',g=>(7+Math.sqrt(g.items.length)*2.6)/k*f*1.6);
+ pts.select('.ringr').style('display',g=>g.items.some(i=>i.rolim)?null:'none').attr('class',g=>'ringr'+(g.items.some(i=>i.rolim)?' pulse':'')).attr('stroke-width',2.4/k).attr('r',g=>(12+Math.sqrt(g.items.length)*2.6)/k*f*1.6);
+ pts.select('.cnt').text(g=>g.items.length>1?g.items.length:'').style('font-size',g=>(Math.sqrt(g.items.length)*1.2+7)/k*f*1.6+'px').style('display',z>5?null:'none');
+ const showT=FIL==='all'||FIL==='ok'||FIL==='lig';trG.style('display',showT?null:'none');
+ sl.attr('stroke-width',(z<6?2.4:2)/k*f*1.6).attr('stroke-dasharray',s=>s.voo||s.o||s.d?`${7/k*f*1.6} ${6/k*f*1.6}`:null);
+ tp.attr('r',2.4/k*f*1.6).attr('stroke-width',.8/k*f*1.6).style('display',z>2?null:'none');
+ mkO.select('circle').attr('r',6/k*f*1.6).attr('stroke-width',1.4/k);mkD.select('circle').attr('r',10/k*f*1.6).attr('stroke-width',2.4/k);
+ mk.selectAll('text').attr('font-size',13/k*f*1.6).attr('stroke-width',3/k*f*1.6).attr('dx',12/k*f*1.6).attr('dy',-8/k*f*1.6);
+ stT.attr('font-size',12/k).attr('stroke-width',3/k).style('display',z<14?null:'none').text(e=>z<5?e[1]:e[0]);
+}
+const filt=document.getElementById('filters');
+const FS=[['all','Todas',D.length],['ok','Confirmadas no cliente',D.filter(d=>d.ok).length],['bad','Não encontradas',D.filter(d=>!d.ok).length],['lig','Ligada',1],['sem','Sem sinal +3 dias',D.filter(d=>d.sem).length]];
+FS.forEach(([v,n,c])=>{const b=document.createElement('button');b.textContent=n+' · '+c;if(v==='all')b.classList.add('on');b.onclick=()=>{[...filt.children].forEach(x=>x.classList.remove('on'));b.classList.add('on');FIL=v;document.getElementById('q').value='';restyle();render();const m=D.filter(d=>match(d)&&d.lat!=null);if(m.length)fitBox(m.map(d=>d.xy[0]).concat(v==='all'||v==='ok'||v==='lig'?T.map(p=>p.xy[0]):[]),m.map(d=>d.xy[1]).concat(v==='all'||v==='ok'||v==='lig'?T.map(p=>p.xy[1]):[]))};filt.appendChild(b)});
+function render(){
+ const q=document.getElementById('q').value.trim();
+ let a=D.filter(d=>match(d)&&(!q||d.id.includes(q)||d.chip.includes(q)));
+ a.sort((x,y)=>(y.ok-x.ok)||(y.lig-x.lig)||x.id.localeCompare(y.id));
+ document.getElementById('lt').textContent=({all:'Todas as iscas',ok:'Confirmadas no cliente',bad:'Não encontradas',lig:'Isca ligada',sem:'Sem sinal há +3 dias'})[FIL];
+ document.getElementById('lc').textContent=a.length+' iscas';
+ const L=document.getElementById('list');L.innerHTML='';
+ a.forEach(d=>{const el=document.createElement('div');el.className='item'+(SEL===d.id?' sel':'');
+  const du=d.dias==null?'sem registro':(d.dias<1?'hoje':Math.floor(d.dias)+' dias sem sinal');
+  el.innerHTML=`<span class="dot" style="background:${d.ok?OK:BAD}"></span><div><div class="t">${d.id}${d.lig?' · LIGADA':''}${d.rolim?' · sinal em Rolim':''}</div><div class="s">${d.chip}</div></div><div class="c">${fmtD(d.uc)}<br>${du}</div>`;
+  el.onclick=()=>selectItem(d);L.appendChild(el)});
+}
+function detail(d){
+ const el=document.getElementById('detail');el.style.display='block';
+ let h=`<div class="id">${d.id} <span class="pill ${d.ok?'v':'r'}">${d.ok?'CONFIRMADA':'NÃO ENCONTRADA'}</span></div>
+ <p>Número de 16 dígitos: <b>${d.chip}</b></p>
+ <p>Conta no Sitalcom: <b>${d.cli||'–'}</b> · <b>${d.disp||'–'}</b></p>
+ <p>Última comunicação: <b>${fmtD(d.uc)}</b>${d.dias!=null?' ('+(d.dias<1?'hoje':Math.floor(d.dias)+' dias atrás')+')':''}</p>
+ ${d.bat!=null?`<p>Bateria: <b>${d.bat}%</b></p>`:''}
+ <p>${d.lat!=null?'Última posição: <b>'+(d.end||'')+'</b>':'<b>Nenhuma posição registrada no Sitalcom</b>'}</p>`;
+ if(d.rolim)h+='<p style="color:'+AM+'"><b style="color:'+AM+'">Comunicou em Rolim de Moura em 19/11, mesmo não tendo sido encontrada. Vale conferir de novo no cliente.</b></p>';
+ if(d.lig){const r=data.resumo||{};h+=`<p style="margin-top:8px"><b>Trajeto (${data.trilha.length} posições válidas)</b></p><ul class="tl">`+data.paradas.filter(p=>p.n>=2||p.mov).map(p=>`<li><b>${p.lugar}</b><br>${fmtD(p.ini)}${p.fim!==p.ini?' → '+fmtD(p.fim):''} · ${p.n} posições</li>`).join('')+`</ul><p style="font-size:12px">Trechos tracejados em laranja: ela foi de avião, então os saltos entre Campinas, Brasília e Porto Velho são esperados. Descartadas: ${r.semgps||0} sem GPS (0,0) e ${r.duplicadas||0} duplicadas.</p>`}
+ el.innerHTML=h;
+}
+function selectItem(d,g){
+ SEL=d.id;detail(d);render();
+ if(d.lig&&T.length){fitBox(T.map(p=>p.xy[0]).concat([oxy[0],dxy[0]]),T.map(p=>p.xy[1]).concat([oxy[1],dxy[1]]))}
+ else if(d.lat!=null){toView(d.xy[0],d.xy[1],Math.max(k,fit()*60))}
+}
+document.getElementById('q').addEventListener('input',()=>{render()});
+document.getElementById('bTrilha').onclick=()=>{const d=D.find(x=>x.lig);if(d)selectItem(d)};
+document.getElementById('bBr').onclick=home;
+d3.select('#zin').on('click',()=>svg.transition().duration(400).call(zoom.scaleBy,2));
+d3.select('#zout').on('click',()=>svg.transition().duration(400).call(zoom.scaleBy,.5));
+svg.on('click',ev=>{const[x,y]=d3.pointer(ev,root.node());toView(x,y,Math.min(k*3.2,fit()*600),800)});
+render();restyle();home();
+window.addEventListener('resize',()=>home());
+setTimeout(home,100);
+})();
+</script>
+</body>
+</html>
