@@ -170,6 +170,7 @@ const pts=root.append('g').selectAll('g').data(G).join('g').attr('transform',g=>
 pts.append('circle').attr('class','ringr').attr('fill','none').attr('stroke',AM);
 pts.append('circle').attr('class','halo');
 pts.append('circle').attr('class','core').attr('stroke','#021a3a');
+pts.append('text').attr('class','rua lbl').attr('text-anchor','start')
 pts.append('text').attr('class','cnt').attr('text-anchor','middle').attr('dy','.35em').attr('fill','#021a3a').style('font-family','Saira,sans-serif').style('font-weight',700);
 pts.on('click',(ev,g)=>{ev.stopPropagation();selectItem(g.items[0],g)});
 
@@ -187,6 +188,7 @@ function restyle(){
  pts.select('.core').attr('fill',g=>g.items.some(i=>i.ok)?OK:BAD).attr('stroke-width',1.2/k).attr('r',g=>(3.4+Math.sqrt(g.items.length)*1.4)/k*f*1.6);
  pts.select('.halo').attr('fill',g=>g.items.some(i=>i.ok)?OK:BAD).attr('fill-opacity',.25).attr('r',g=>(7+Math.sqrt(g.items.length)*2.6)/k*f*1.6);
  pts.select('.ringr').style('display',g=>g.items.some(i=>i.com)?null:'none').attr('stroke',g=>g.items.some(i=>i.com&&!i.ok)?'#ff4d4d':'#2fd37b').attr('class',g=>'ringr'+(g.items.some(i=>i.com)?' pulse':'')).attr('stroke-width',3.4/k).attr('r',g=>(12+Math.sqrt(g.items.length)*2.6)/k*f*1.6);
+pts.select('.rua').text(g=>g.items.length>1?g.items.length+' iscas · '+((g.items[0].end||'').split(' - ').reverse().join(' · ')):(g.items[0].end||'').split(' - ').reverse().join(' · ')).attr('font-size',12/k*f*1.6).attr('stroke-width',3/k*f*1.6).attr('dx',14/k*f*1.6).attr('dy',4/k*f*1.6).style('display',z>(FIL==='all'?9:4)?null:'none')
  pts.select('.cnt').text(g=>g.items.length>1?g.items.length:'').style('font-size',g=>(Math.sqrt(g.items.length)*1.2+7)/k*f*1.6+'px').style('display',z>5?null:'none');
  const showT=FIL==='all'||FIL==='ok'||FIL==='lig';trG.style('display',showT?null:'none');
  trsG.style('display',FIL==='all'||FIL==='bad'||FIL==='ok'||FIL==='com'?null:'none');trsL.attr('stroke-width',(z<6?1.6:1.3)/k*f*1.6).attr('stroke-opacity',.8);
@@ -209,7 +211,7 @@ function render(){
  const L=document.getElementById('list');L.innerHTML='';
  a.forEach(d=>{const el=document.createElement('div');el.className='item'+(SEL===d.id?' sel':'');
   const du=d.uc?rel(d.uc):'sem registro';
-  el.innerHTML=`<span class="dot" style="background:${d.ok?OK:BAD}"></span><div><div class="t">${d.id}${d.lig?' · LIGADA (de propósito)':d.com?' · LIGADA após entrega':''}</div><div class="s">${d.chip}</div></div><div class="c">${fmtD(d.uc)}<br>${du}</div>`;
+  el.innerHTML=`<span class="dot" style="background:${d.ok?OK:BAD}"></span><div><div class="t">${d.id}${d.lig?' · LIGADA (de propósito)':d.com?' · LIGADA após entrega':''}</div><div class="s">${d.end?d.end:'sem posição no Sitalcom'}</div><div class="s" style="opacity:.6">${d.chip}</div></div><div class="c">${fmtD(d.uc)}<br>${du}</div>`;
   el.onclick=()=>selectItem(d);L.appendChild(el)});
 }
 function detail(d){
@@ -266,7 +268,7 @@ function alertas(data){
  let on=false;tit=setInterval(()=>{document.title=(on=!on)?'🚨 ALERTA · Pedido 4450':'Pedido 4450 · Minerva'},800);
  document.getElementById('ciente').onclick=()=>{novos.forEach(d=>ack[d.id]=d.uc);try{localStorage.setItem('m4450_ack',JSON.stringify(ack))}catch(e){};m.remove();clearInterval(tit);document.title='Pedido 4450 · Minerva Rolim de Moura'};
 }
-const PERIODO=180;let falta=PERIODO,busy=false;
+const PERIODO=60;let falta=PERIODO,busy=false;
 async function atualizar(manual){
  if(busy)return;busy=true;const bt=document.getElementById('bAtu');bt.textContent='↻ Atualizando...';
  try{
