@@ -1,0 +1,303 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Painel de iscas ABC Cargas</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Zen+Dots&family=Saira:wght@500;600;700&family=Share+Tech&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<style>
+/* Painel de frota: cartões de status no topo (também são filtros), mapa à esquerda, lista de iscas à direita, ficha da isca ao clicar. Padrão visual Braspress. */
+:root{--deep:#021a3a;--panel:#04224a;--card:#0a3168;--line:#2e4766;--sky:#1ca4f2;--ok:#36d399;--amber:#f59f0a;--red:#ff5a5f;--muted:#b9c6d8;--ink:#fff;
+--disp:"Zen Dots",Saira,sans-serif;--num:Saira,Inter,sans-serif;--mono:"Share Tech",ui-monospace,monospace;--text:Inter,system-ui,sans-serif;color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--deep);color:var(--ink);font-family:var(--text);font-size:14px}
+.wrap{padding-block:16px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:14px;max-width:1700px;margin:0 auto}
+header{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;padding:16px 20px;border-radius:14px;background:linear-gradient(135deg,#0a3670,#032c5f 45%,#021a3a);border:1px solid var(--line)}
+header b{font-family:var(--disp);font-weight:400;font-size:24px;letter-spacing:.04em}
+header .sub{font-family:var(--mono);color:var(--sky);letter-spacing:.14em;text-transform:uppercase;font-size:12.5px;margin-top:6px}
+header .upd{font-size:13px;color:var(--muted);text-align:right}
+header .upd strong{color:#fff;font-family:var(--num);font-size:16px;display:block}
+.cards{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}
+.card{all:unset;box-sizing:border-box;cursor:pointer;background:var(--card);border:1px solid var(--line);border-top:4px solid var(--c,#1ca4f2);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.card:hover{border-color:var(--c)}
+.card.on{background:#114386;box-shadow:0 0 0 2px var(--c) inset}
+.card:focus-visible{outline:2px solid #fff;outline-offset:2px}
+.card .v{font-family:var(--num);font-weight:700;font-size:32px;line-height:1;font-variant-numeric:tabular-nums}
+.card .l{font-weight:600;font-size:13.5px}
+.card .d{font-size:12px;color:var(--muted)}
+.main{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:14px;align-items:start}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;min-width:0}
+.boxh{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 14px;border-bottom:1px solid var(--line)}
+.boxh h3{margin:0;font-family:var(--mono);font-weight:400;font-size:12.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--sky)}
+.seg{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+.seg button{all:unset;cursor:pointer;padding:6px 11px;font-size:12.5px;color:var(--muted)}
+.seg button.on{background:var(--sky);color:#021a3a;font-weight:600}
+.mapbox{position:sticky;top:12px}
+#mapwrap{position:relative;height:min(70vh,640px);background:radial-gradient(circle at 50% 55%,#0a3670 0%,#032c5f 50%,#021a3a 100%)}
+svg#map{width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+.legend{position:absolute;left:10px;bottom:10px;background:rgba(2,26,58,.85);border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:12.5px;display:flex;flex-direction:column;gap:4px;min-width:170px}
+.legend div{display:flex;align-items:center;gap:7px}
+.zoom{position:absolute;right:10px;top:10px;display:flex;flex-direction:column;gap:6px}
+.zoom button{width:36px;height:36px;border-radius:9px;border:1px solid var(--line);background:rgba(2,26,58,.85);color:#fff;font-size:18px;cursor:pointer}
+.dot{width:11px;height:11px;border-radius:50%;flex:none;display:inline-block}
+.tip{position:absolute;pointer-events:none;background:#021a3a;border:1px solid var(--sky);border-radius:9px;padding:7px 9px;font-size:12.5px;line-height:1.4;z-index:5;display:none;max-width:240px}
+.ficha{position:absolute;left:10px;top:10px;width:min(310px,calc(100% - 70px));max-height:calc(100% - 20px);overflow:auto;background:rgba(2,26,58,.94);border:1px solid var(--sky);border-radius:12px;padding:12px;display:none;gap:10px;flex-direction:column;z-index:4}
+.ficha.show{display:flex}
+.ficha .top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.ficha .id{font-family:var(--num);font-size:20px;font-weight:700}
+.ficha .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.ficha .it{background:var(--card);border-radius:10px;padding:8px 10px}
+.ficha .it .k{font-size:11.5px;color:var(--muted)}
+.ficha .it .x{font-family:var(--num);font-size:17px;font-weight:600;margin-top:2px}
+.ficha .trips{display:flex;flex-direction:column;gap:4px;font-size:12.5px}
+.ficha .trips div{display:flex;justify-content:space-between;gap:8px;border-bottom:1px dashed var(--line);padding:3px 0}
+.close{all:unset;cursor:pointer;color:var(--muted);font-size:20px;padding:0 4px}
+.tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+input[type=search]{background:#021a3a;border:1px solid var(--line);color:#fff;border-radius:9px;padding:7px 10px;font-size:13px;width:170px}
+.count{font-size:12.5px;color:var(--muted)}
+.tbl{max-height:calc(70vh + 210px);overflow:auto}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{position:sticky;top:0;background:#062a57;text-align:left;font-weight:600;font-size:12px;color:var(--muted);padding:8px 8px;cursor:pointer;white-space:nowrap;user-select:none;z-index:1}
+th.s{color:#fff}th.s::after{content:' ▼';color:var(--sky)}th.s.asc::after{content:' ▲'}
+@keyframes ring{0%{transform:scale(.7);opacity:1}100%{transform:scale(2.6);opacity:0}}
+.ring{transform-box:fill-box;transform-origin:center;animation:ring 1.6s ease-out infinite}.ring.b{animation-delay:.8s}
+.trips div.tr{cursor:pointer;border-radius:6px;padding:3px 5px}.trips div.tr:hover{background:#0a3168}.trips div.tr.on{background:#114386;box-shadow:inset 3px 0 0 var(--sky)}
+select{background:#021a3a;border:1px solid var(--line);color:#fff;border-radius:9px;padding:6px 8px;font-size:13px}
+.tripinfo{font-size:13px;background:#0a3168;border-radius:9px;padding:8px 10px;border-left:3px solid var(--sky)}
+td{padding:7px 8px;border-top:1px solid #12355f;white-space:nowrap;font-variant-numeric:tabular-nums}
+tbody tr{cursor:pointer}tbody tr:hover{background:#0a3168}tbody tr.sel{background:#114386}
+.badge{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600}
+.bat{display:flex;align-items:center;gap:7px}
+.bat i{display:block;width:44px;height:8px;border-radius:4px;background:#12355f;overflow:hidden}
+.bat i b{display:block;height:100%;border-radius:4px}
+.muted{color:var(--muted)}
+.where{max-width:260px;overflow:hidden;text-overflow:ellipsis}
+.foot{font-size:12px;color:var(--muted);line-height:1.5;margin:0}
+@media (max-width:1100px){.cards{grid-template-columns:repeat(3,minmax(0,1fr))}.main{grid-template-columns:minmax(0,1fr)}.mapbox{position:static}#mapwrap{height:60vh}.tbl{max-height:none}}
+@media (max-width:560px){.ficha{position:static;width:auto;max-height:none;border-radius:0;border-width:1px 0 0}.cards{grid-template-columns:repeat(2,minmax(0,1fr))}.card .v{font-size:26px}.ficha .grid{grid-template-columns:repeat(2,minmax(0,1fr))}header b{font-size:19px}}
+</style>
+
+<div class="wrap">
+<header>
+ <div><b>ISCAS ABC CARGAS</b><div class="sub">Painel de status · Santos &amp; Zanon</div></div>
+ <div class="upd">Atualiza sozinho a cada minuto · Sitalcom<strong id="ref">20/11/2026 às 22:30</strong></div>
+</header>
+
+<div class="cards" id="cards"></div>
+
+<div class="main">
+ <div class="box mapbox">
+  <div class="boxh"><h3>Mapa</h3>
+   <div class="seg" id="colorby"><button data-v="st" class="on">Comunicação</button><button data-v="bat">Bateria</button><button data-v="sit">Situação</button></div>
+  </div>
+  <div id="mapwrap"><svg id="map" role="img" aria-label="Mapa com a última posição de cada isca"></svg>
+   <div class="legend" id="legend"></div>
+   <div class="zoom"><button id="zin" aria-label="Aproximar">+</button><button id="zout" aria-label="Afastar">−</button><button id="zfit" aria-label="Ver todas">⤢</button></div>
+   <div class="tip" id="tip"></div>
+   <div class="ficha" id="ficha"></div>
+  </div>
+ </div>
+
+ <div class="box">
+  <div class="boxh"><h3>Lista de iscas</h3>
+   <div class="tools"><span class="count" id="count"></span><input type="search" id="q" placeholder="Buscar ID ou cidade"><select id="sortk" aria-label="Ordenar por"><option value="age">Ordenar: tempo sem comunicar</option><option value="lc">Ordenar: última atualização</option><option value="bat">Ordenar: bateria</option><option value="iv">Ordenar: intervalo</option><option value="km">Ordenar: distância da base</option><option value="id">Ordenar: ID</option><option value="m">Ordenar: modelo</option></select><div class="seg" id="sortd"><button data-a="1" class="on">↑ Crescente</button><button data-a="0">↓ Decrescente</button></div></div>
+  </div>
+  <div class="tbl"><table><thead><tr>
+   <th data-k="id">ID</th><th data-k="m">Modelo</th><th data-k="age" class="s asc">Comunicação</th><th data-k="lc">Última atualização</th><th data-k="iv">Intervalo</th><th data-k="bat">Bateria</th><th data-k="km">Onde está</th>
+  </tr></thead><tbody id="rows"></tbody></table></div>
+ </div>
+</div>
+
+<p class="foot">
+<b>Como ler:</b> Ativa = comunicou nas últimas 24 h. Atrasada = 1 a 7 dias sem comunicar. Sem comunicar = mais de 7 dias. Em rota = última posição a mais de 45 km da base de São Bernardo do Campo. Intervalo = tempo médio entre duas posições enviadas (set a nov/2026). Bateria crítica = 20% ou menos. O círculo azul com número é a base: clique nele para listar só as iscas que estão lá. Clique em um cartão para filtrar e em uma isca para ver a ficha e a última viagem. A rota azul no mapa é a viagem mais recente da isca (a em andamento ou, se já voltou, a última concluída): sai da base de São Bernardo, passa pelas cidades onde a isca esteve e volta. A linha é aproximada; a bolinha amarela só indica o sentido. Clique nas viagens da ficha para ver as anteriores.
+</p>
+</div>
+
+<script>
+(async function(){
+const $=s=>document.querySelector(s);
+const fmt=(n,d=1)=>n==null?'–':n.toLocaleString('pt-BR',{maximumFractionDigits:d});
+async function abrir(senha,blob){
+ const b=Uint8Array.from(atob(blob),c=>c.charCodeAt(0)),enc=new TextEncoder();
+ const km=await crypto.subtle.importKey('raw',enc.encode(senha),'PBKDF2',false,['deriveKey']);
+ const k=await crypto.subtle.deriveKey({name:'PBKDF2',salt:b.slice(0,16),iterations:200000,hash:'SHA-256'},km,{name:'AES-GCM',length:256},false,['decrypt']);
+ const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:b.slice(16,28)},k,b.slice(28));
+ return JSON.parse(new TextDecoder().decode(pt));
+}
+function pedir(erro){return new Promise(ok=>{
+ const o=document.createElement('div');o.style.cssText='position:fixed;inset:0;z-index:9999;background:#06224a;display:flex;align-items:center;justify-content:center;font-family:Saira,Inter,sans-serif;color:#fff';
+ o.innerHTML='<form style="background:#0b3170;padding:28px 32px;border-radius:14px;width:min(340px,86vw);display:grid;gap:12px;text-align:center"><b style="font-size:18px">Iscas ABC Cargas</b><span style="font-size:13px;opacity:.8">Digite a senha para acessar</span><input type="password" autofocus style="padding:10px;border-radius:8px;border:1px solid #1ca4f2;background:#06224a;color:#fff;font-size:15px"><span style="color:#ff8a8a;font-size:13px;min-height:16px">'+(erro||'')+'</span><button style="padding:10px;border:0;border-radius:8px;background:#1ca4f2;color:#fff;font-weight:700;font-size:15px;cursor:pointer">Entrar</button></form>';
+ document.body.appendChild(o);const i=o.querySelector('input');i.focus();
+ o.querySelector('form').onsubmit=e=>{e.preventDefault();o.remove();ok(i.value)};
+})}
+const baixa=async n=>{const r=await fetch(n+'?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw 0;return (await r.text()).trim()};
+let HIST,LIVE,BR,blobH,blobL,SENHA='',erro='',sv='';
+try{[blobH,blobL,BR]=await Promise.all([baixa('abc_hist.enc'),baixa('abc.enc'),fetch('br.json').then(r=>r.json())]);}
+catch(e){$('#rows').innerHTML='<tr><td>Não foi possível carregar os dados.</td></tr>';return;}
+try{sv=localStorage.getItem('mapa_s')||''}catch(e){}
+while(!HIST){
+ const senha=sv||await pedir(erro);sv='';
+ try{HIST=await abrir(senha,blobH);LIVE=await abrir(senha,blobL);SENHA=senha;try{localStorage.setItem('mapa_s',senha)}catch(e){}}
+ catch(e){HIST=null;erro='Senha incorreta.';try{localStorage.removeItem('mapa_s')}catch(x){}}
+}
+const C=HIST.cities,BASE=[-46.55,-23.70];
+const DEV=HIST.devs.map(d=>Object.assign({},d,{t:(d.t||[]).slice()})),BYID={};DEV.forEach(d=>BYID[d.id]=d);
+let REFT=new Date();
+const kmBase=(la,lo)=>{const R=6371,r=Math.PI/180,a=Math.sin((la-BASE[1])*r/2)**2+Math.cos(BASE[1]*r)*Math.cos(la*r)*Math.sin((lo-BASE[0])*r/2)**2;return 2*R*Math.asin(Math.sqrt(a))};
+const pdt=s=>{const m=(s||'').match(/(\d+)-(\d+)-(\d+) (\d+):(\d+)/);return m?new Date(+m[1],m[2]-1,+m[3],+m[4],+m[5]):null};
+function aplica(L){
+ Object.assign(C,L.cn||{});
+ (L.d||[]).forEach(r=>{let d=BYID[r[0]];if(!d){d={id:r[0],m:r[1],t:[]};DEV.push(d);BYID[d.id]=d}
+  d.m=r[1]||d.m;d.bat=r[2];d.sysd=pdt(r[3]);d.lc=r[3].slice(8,10)+'/'+r[3].slice(5,7)+' '+r[3].slice(11,16);d.la=r[4];d.lo=r[5];d.gps=r[6];d.cid=r[7];d.km=(r[4]!=null&&r[5]!=null)?kmBase(r[4],r[5]):null});
+ for(const id in (L.lt||{})){const d=BYID[id];if(!d)continue;const n=L.lt[id][0],x=L.lt[id][1];if(n===d.t.length+1)d.t.push(x);else d.t[Math.max(0,n-1)]=x}
+ REFT=new Date();DEV.forEach(d=>{d.age=d.sysd?(REFT-d.sysd)/864e5:99});
+ const g=L.gerado||'';if(g)$('#ref').textContent=g.slice(8,10)+'/'+g.slice(5,7)+'/'+g.slice(0,4)+' às '+g.slice(11,16);
+}
+aplica(LIVE);
+const saiDate=x=>{const m=(x.sai||'').match(/(\d+)\/(\d+) (\d+):(\d+)/);if(!m)return null;let d=new Date(REFT.getFullYear(),m[2]-1,+m[1],+m[3],+m[4]);if(d>REFT)d.setFullYear(d.getFullYear()-1);return d};
+const since=x=>{const d=saiDate(x);if(!d)return '';const h=(REFT-d)/36e5;return h<24?`há ${Math.round(h)} h`:`há ${fmt(h/24,1)} dias`};
+const COL={ok:'#36d399',amber:'#f59f0a',red:'#ff5a5f',sky:'#1ca4f2',gray:'#8aa0bd'};
+const ST=a=>a<=1?{k:'A',n:'Ativa',c:COL.ok}:a<=7?{k:'B',n:'Atrasada',c:COL.amber}:{k:'C',n:'Sem comunicar',c:COL.red};
+const BT=b=>b>=50?{k:'ok',n:'50% ou mais',c:COL.ok}:b>20?{k:'mid',n:'21% a 49%',c:COL.amber}:{k:'low',n:'20% ou menos',c:COL.red};
+const SI=d=>d.km==null?{k:'x',n:'Sem posição',c:COL.gray}:d.km<45?{k:'base',n:'Na base',c:COL.sky}:{k:'rota',n:'Em rota',c:COL.amber};
+const ageTxt=a=>a<1/24?'agora':a<1?`há ${Math.round(a*24)} h`:`há ${fmt(a,0)} ${Math.round(a)==1?'dia':'dias'}`;
+const city=d=>(d.cid||'').replace('/',' / ');
+const derive=()=>DEV.forEach(d=>{d.st=ST(d.age);d.bt=BT(d.bat);d.si=SI(d);d.open=(d.t||[]).find(t=>!t.r)});derive();
+
+const FIL=[
+ {k:'all',l:'Total de iscas',d:'Base ativa no Sitalcom',c:'#1ca4f2',f:()=>true},
+ {k:'A',l:'Ativas',d:'Comunicaram em até 24 h',c:COL.ok,f:d=>d.st.k=='A'},
+ {k:'B',l:'Atrasadas',d:'1 a 7 dias sem comunicar',c:COL.amber,f:d=>d.st.k=='B'},
+ {k:'C',l:'Sem comunicar',d:'Mais de 7 dias',c:COL.red,f:d=>d.st.k=='C'},
+ {k:'rota',l:'Em rota',d:'Fora da base e comunicando (até 7 d)',c:'#f59f0a',f:d=>d.si.k=='rota'&&d.age<=7},
+ {k:'low',l:'Bateria crítica',d:'20% ou menos',c:COL.red,f:d=>d.bat<=20}];
+let filt='all',q='',sortK='age',asc=true,colorBy='st',sel=null,showBaseOnly=false,baseN=0,kz=1,cur=[];
+$('#cards').innerHTML=FIL.map(f=>`<button class="card${f.k=='all'?' on':''}" data-k="${f.k}" style="--c:${f.c}"><span class="v">${DEV.filter(f.f).length}</span><span class="l">${f.l}</span><span class="d">${f.d}</span></button>`).join('');
+$('#cards').onclick=e=>{const b=e.target.closest('.card');if(!b)return;filt=b.dataset.k==filt?'all':b.dataset.k;showBaseOnly=false;document.querySelectorAll('.card').forEach(x=>x.classList.toggle('on',x.dataset.k==filt));render()};
+
+// mapa (mesma projeção do mapa Braspress)
+const W=1000,H=1000,LON0=-76,LON1=-34.6,LAT0=-36,LAT1=5.6,K=Math.cos(-15*Math.PI/180);
+const S=Math.min((W-40)/((LON1-LON0)*K),(H-40)/(LAT1-LAT0)),OX=(W-(LON1-LON0)*K*S)/2,OY=(H-(LAT1-LAT0)*S)/2;
+const px=(lon,lat)=>[OX+(lon-LON0)*K*S,OY+(LAT1-lat)*S];
+const svg=d3.select('#map').attr('viewBox',`0 0 ${W} ${H}`).attr('preserveAspectRatio','xMidYMid meet'),root=svg.append('g');
+const outline=BR.o.map(p=>px(p[0],p[1]));
+root.append('path').attr('d','M'+outline.map(p=>p.join(' ')).join('L')+'Z').attr('fill','#0d3a74').attr('fill-opacity',.5).attr('stroke','#4a8cda').attr('stroke-opacity',.6).attr('vector-effect','non-scaling-stroke');
+BR.s.forEach(e=>{const d=e[4].map(r=>{let o='M';for(let i=0;i<r.length;i+=2){const[x,y]=px(r[i],r[i+1]);o+=(i?'L':'')+x.toFixed(1)+' '+y.toFixed(1)}return o+'Z'}).join('');
+ root.append('path').attr('d',d).attr('fill','none').attr('stroke','#7fb6ee').attr('stroke-opacity',.4).attr('vector-effect','non-scaling-stroke');e.xy=px(e[2],e[3])});
+const lblG=root.append('g').style('pointer-events','none');
+lblG.selectAll('text').data(BR.s).join('text').attr('x',e=>e.xy[0]).attr('y',e=>e.xy[1]).attr('text-anchor','middle').attr('fill','#b9c6d8').attr('fill-opacity',.5).attr('font-family','Share Tech, monospace').text(e=>e[0]);
+const routeG=root.append('g'),dotG=root.append('g'),baseG=root.append('g'),moveG=root.append('g'),selG=root.append('g').style('pointer-events','none');let selP=null;
+const B=px(...BASE);
+const baseC=baseG.append('circle').attr('cx',B[0]).attr('cy',B[1]).attr('fill','#1ca4f2').attr('fill-opacity',.3).attr('stroke','#1ca4f2').attr('vector-effect','non-scaling-stroke').attr('stroke-width',2).style('cursor','pointer');
+const baseT=baseG.append('text').attr('x',B[0]).attr('text-anchor','middle').attr('fill','#fff').attr('font-family','Saira, sans-serif').attr('font-weight',700).style('pointer-events','none');
+const baseL=baseG.append('text').attr('fill','#fff').attr('font-family','Share Tech, monospace').style('pointer-events','none').text('BASE SÃO BERNARDO');
+const tip=$('#tip');
+function tipShow(ev,h){const r=$('#mapwrap').getBoundingClientRect();tip.innerHTML=h;tip.style.display='block';let x=ev.clientX-r.left+14,y=ev.clientY-r.top+14;if(x>r.width-250)x-=270;tip.style.left=x+'px';tip.style.top=y+'px'}
+function tipHide(){tip.style.display='none'}
+baseC.on('click',()=>{showBaseOnly=!showBaseOnly;render()}).on('mousemove',ev=>tipShow(ev,`<b>Base São Bernardo do Campo</b><br>${baseN} iscas a menos de 45 km. Clique para ${showBaseOnly?'voltar a ver todas':'listar só elas'}.`)).on('mouseleave',tipHide);
+const zoom=d3.zoom().scaleExtent([1,60]).on('zoom',e=>{root.attr('transform',e.transform);kz=e.transform.k;sizes()});
+svg.call(zoom).on('dblclick.zoom',null);
+function sizes(){const r=1/kz;dotG.selectAll('circle').attr('r',d=>(d===sel?9:5.5)*r).attr('stroke-width',1.3*r);
+ const br=(14+Math.sqrt(baseN)*1.5)*r;baseC.attr('r',br);baseT.attr('y',B[1]+5*r).attr('font-size',14*r).text(baseN);baseL.attr('x',B[0]+br+6*r).attr('y',B[1]+4*r).attr('font-size',12*r);
+ lblG.selectAll('text').attr('font-size',12*r);routeG.selectAll('circle').attr('r',4.5*r).attr('stroke-width',1.5*r);moveG.selectAll('g.m').attr('transform',`scale(${r})`);
+ if(selP)selG.select('g').attr('transform',`translate(${selP[0]},${selP[1]}) scale(${r})`)}
+function fit(list){const pts=(list.length?list:DEV).filter(d=>d.km!=null).map(d=>px(d.lo,d.la));pts.push(B);
+ const xs=pts.map(p=>p[0]),ys=pts.map(p=>p[1]);const x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys);
+ const w=Math.max(x1-x0,60),h=Math.max(y1-y0,60),k=Math.min(60,0.85*Math.min(W/w,H/h));const cx=(x0+x1)/2,cy=(y0+y1)/2;
+ svg.transition().duration(600).call(zoom.transform,d3.zoomIdentity.translate(W/2-k*cx,H/2-k*cy).scale(k))}
+$('#zin').onclick=()=>svg.transition().call(zoom.scaleBy,1.6);$('#zout').onclick=()=>svg.transition().call(zoom.scaleBy,1/1.6);$('#zfit').onclick=()=>fit(cur);
+const colorOf=d=>(colorBy=='st'?d.st:colorBy=='bat'?d.bt:d.si).c;
+function legend(list){const g=colorBy=='st'?[ST(0),ST(3),ST(9)]:colorBy=='bat'?[BT(80),BT(30),BT(5)]:[SI({km:0}),SI({km:99})];
+ const key=colorBy=='st'?'st':colorBy=='bat'?'bt':'si';
+ $('#legend').innerHTML=g.map(x=>`<div><span class="dot" style="background:${x.c}"></span>${x.n}<b style="margin-left:auto;padding-left:12px">${list.filter(d=>d[key].k==x.k).length}</b></div>`).join('')+(colorBy!='sit'?`<div class="muted" style="font-size:11.5px">Iscas na base somadas no círculo azul</div>`:'')}
+$('#colorby').onclick=e=>{const b=e.target.closest('button');if(!b)return;colorBy=b.dataset.v;document.querySelectorAll('#colorby button').forEach(x=>x.classList.toggle('on',x===b));render(false)};
+
+// lista
+const rows=$('#rows');
+function syncSort(){document.querySelectorAll('th').forEach(x=>{x.classList.toggle('s',x.dataset.k==sortK);x.classList.toggle('asc',x.dataset.k==sortK&&asc)});$('#sortk').value=sortK;document.querySelectorAll('#sortd button').forEach(b=>b.classList.toggle('on',(b.dataset.a=='1')==asc));render(false)}
+document.querySelectorAll('th').forEach(th=>th.onclick=()=>{const k=th.dataset.k;asc=sortK==k?!asc:true;sortK=k;syncSort()});
+$('#sortk').onchange=e=>{sortK=e.target.value;syncSort()};
+$('#sortd').onclick=e=>{const b=e.target.closest('button');if(!b)return;asc=b.dataset.a=='1';syncSort()};
+$('#q').oninput=e=>{q=e.target.value.trim().toLowerCase();render()};
+function render(refit=true){
+ const f=FIL.find(x=>x.k==filt);
+ cur=DEV.filter(d=>f.f(d)&&(!showBaseOnly||d.si.k=='base')&&(!q||d.id.includes(q)||(d.cid||'').toLowerCase().includes(q)));
+ const key=sortK=='lc'?(d=>-d.age):sortK=='km'?(d=>d.km??1e9):(d=>d[sortK]??1e9);
+ cur.sort((a,b)=>{const x=key(a),y=key(b);return (x<y?-1:x>y?1:0)*(asc?1:-1)});
+ $('#count').textContent=`${cur.length} de ${DEV.length}`+(showBaseOnly?' · só na base':'');
+ rows.innerHTML=cur.map(d=>`<tr data-id="${d.id}"${d===sel?' class="sel"':''}><td><b>${d.id}</b></td><td>${d.m}</td>
+ <td><span class="badge"><span class="dot" style="background:${d.st.c}"></span>${d.st.n}</span></td>
+ <td>${d.lc} <span class="muted">· ${ageTxt(d.age)}</span></td>
+ <td>${d.iv?`${d.iv} min`:'<span class="muted">–</span>'}</td>
+ <td><span class="bat"><i><b style="width:${Math.max(3,d.bat)}%;background:${d.bt.c}"></b></i>${d.bat}%</span></td>
+ <td class="where">${d.si.k=='rota'?`<span style="color:${COL.amber}">Em rota</span> · ${city(d)}${d.open&&d.open.sai?` <span class="muted">· saiu ${since(d.open)}</span>`:''}`:d.si.k=='base'?`<span style="color:${COL.sky}">Na base</span>`:'Sem posição'}</td></tr>`).join('')||'<tr><td colspan="7" class="muted">Nenhuma isca neste filtro.</td></tr>';
+ const onMap=cur.filter(d=>d.km!=null);
+ baseN=onMap.filter(d=>d.si.k=='base').length;
+ dotG.selectAll('circle').data(onMap.filter(d=>d.si.k!='base'||d===sel),d=>d.id).join('circle').attr('cx',d=>px(d.lo,d.la)[0]).attr('cy',d=>px(d.lo,d.la)[1])
+  .attr('fill',colorOf).attr('stroke','#021a3a').style('cursor','pointer')
+  .on('mousemove',(ev,d)=>tipShow(ev,`<b>${d.id}</b> · ${d.m}<br>${d.st.n} · ${ageTxt(d.age)}<br>Bateria ${d.bat}% · ${city(d)}`)).on('mouseleave',tipHide).on('click',(ev,d)=>pick(d.id));
+ dotG.selectAll('circle').sort((a,b)=>(a===sel)-(b===sel));
+ baseG.style('display',baseN?null:'none');
+ legend(onMap);sizes();if(refit)fit(cur);
+}
+rows.onclick=e=>{const tr=e.target.closest('tr[data-id]');if(tr)pick(tr.dataset.id)};
+
+// ficha da isca
+function pick(id,quiet){
+ sel=DEV.find(d=>d.id==id);if(!sel)return;render(false);
+ const d=sel,t=d.t||[];
+ const pos=`${d.si.k=='rota'?'Em rota':'Na base'} · ${city(d)}${d.si.k=='rota'?` (${fmt(d.km,0)} km da base)`:''}`;
+ $('#ficha').innerHTML=`<div class="top"><div><div class="id">${d.id}</div><div class="muted">${d.m} · ${pos}</div></div><button class="close" aria-label="Fechar">✕</button></div>
+ <div class="grid">
+  <div class="it"><div class="k">Comunicação</div><div class="x" style="color:${d.st.c}">${d.st.n}</div></div>
+  <div class="it"><div class="k">Última atualização</div><div class="x">${d.lc}</div><div class="k">${ageTxt(d.age)}</div></div>
+  <div class="it"><div class="k">Intervalo entre posições</div><div class="x">${d.iv?d.iv+' min':'–'}</div></div>
+  <div class="it"><div class="k">Bateria agora</div><div class="x" style="color:${d.bt.c}">${d.bat}%</div></div>
+  <div class="it"><div class="k">Bateria dura (60% a 20%)</div><div class="x">${d.aut?fmt(d.aut)+' dias':'–'}</div></div>
+  <div class="it"><div class="k">Ida e volta típica</div><div class="x">${d.med!=null?fmt(d.med)+' dias':'–'}</div></div>
+ </div>
+ ${d.open&&d.si.k=='rota'?`<div class="tripinfo" style="border-left-color:${COL.amber}"><b>Viagem em andamento</b><br>Saiu da base de São Bernardo em <b>${d.open.sai||d.open.s}</b>${d.open.sai?` (${since(d.open)})`:''}.<br>Agora em <b>${city(d)}</b>, a ${fmt(d.km,0)} km da base. Ponto mais distante até aqui: ${d.open.dest}.</div>`:''}
+ ${d.aut&&d.med&&d.aut<d.med?`<div style="font-size:13px;color:${COL.red}">Atenção: a bateria desta isca dura menos que a viagem típica dela.</div>`:''}
+ <div class="trips"><div class="muted"><span>Últimas viagens (clique para ver no mapa)</span><span>dias · destino</span></div>${t.map((x,i)=>[x,i]).slice(-5).reverse().map(([x,i])=>`<div class="tr" data-i="${i}"><span>${x.sai&&!x.r?x.sai:x.s} → ${x.r||'em andamento'}</span><span>${x.d!=null?fmt(x.d)+' d':'–'} · ${x.dest}</span></div>`).join('')||'<div class="muted">Sem viagens registradas desde 01/09/2026.</div>'}</div><div class="tripinfo" id="tripinfo" style="display:none"></div>`;
+ $('#ficha').classList.add('show');
+ $('#ficha .close').onclick=()=>{sel=null;selP=null;$('#ficha').classList.remove('show');clearTrip();selG.selectAll('*').remove();render(false)};
+ $('#ficha .trips').onclick=e=>{const r=e.target.closest('.tr');if(r)drawTrip(d,+r.dataset.i,true)};
+ selP=d.km!=null?px(d.lo,d.la):B;selG.selectAll('*').remove();const sg=selG.append('g');
+ sg.append('circle').attr('class','ring').attr('r',16).attr('fill','none').attr('stroke','#ff3b3b').attr('stroke-width',3);sg.append('circle').attr('class','ring b').attr('r',16).attr('fill','none').attr('stroke','#ff3b3b').attr('stroke-width',3);
+ sg.append('circle').attr('r',16).attr('fill','none').attr('stroke','#ff3b3b').attr('stroke-width',3.5);
+ const last=t[t.length-1];
+ if(last)drawTrip(d,t.length-1,false);else clearTrip();
+ const fp=[d.km!=null?px(d.lo,d.la):B];if(last)last.c.forEach(k=>C[k]&&fp.push(px(C[k][1],C[k][0])));fp.push(B);
+ const xs=fp.map(p=>p[0]),ys=fp.map(p=>p[1]),x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys);
+ const side=!matchMedia('(max-width:560px)').matches,k=Math.min(30,(side?0.4:0.7)*Math.min(W/Math.max(x1-x0,30),H/Math.max(y1-y0,30)));
+ if(!quiet)svg.transition().duration(600).call(zoom.transform,d3.zoomIdentity.translate((side?W*0.76:W/2)-k*(x0+x1)/2,H/2-k*(y0+y1)/2).scale(k));
+ sizes();
+ if(!quiet&&matchMedia('(max-width:1100px)').matches)$('#ficha').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+// rota animada: linha azul com brilho e bolinha percorrendo o trajeto
+function arc(a,b,bend){const mx=(a[0]+b[0])/2,my=(a[1]+b[1])/2,dx=b[0]-a[0],dy=b[1]-a[1];return `Q${mx-dy*bend},${my+dx*bend} ${b[0]},${b[1]}`}
+function clearTrip(){routeG.selectAll('*').remove();moveG.selectAll('*').interrupt().remove();const ti=$('#tripinfo');if(ti)ti.style.display='none'}
+function drawTrip(d,i,zoomTo){clearTrip();const x=(d.t||[])[i];if(!x)return;
+ document.querySelectorAll('#ficha .tr').forEach(r=>r.classList.toggle('on',+r.dataset.i==i));
+ const stops=x.c.map(k=>C[k]&&px(C[k][1],C[k][0])).filter(Boolean);const pts=[B,...stops];if(x.r)pts.push(B);else if(d.km!=null)pts.push(px(d.lo,d.la));
+ let dd=`M${pts[0][0]},${pts[0][1]}`;for(let j=1;j<pts.length;j++)dd+=arc(pts[j-1],pts[j],j==pts.length-1&&x.r?-.18:.18);
+ routeG.append('path').attr('d',dd).attr('fill','none').attr('stroke','#1ca4f2').attr('stroke-opacity',.25).attr('stroke-width',10).attr('stroke-linecap','round').attr('vector-effect','non-scaling-stroke');
+ const node=routeG.append('path').attr('d',dd).attr('fill','none').attr('stroke','#1ca4f2').attr('stroke-width',3).attr('stroke-linecap','round').attr('vector-effect','non-scaling-stroke').node();
+ routeG.selectAll('circle').data(stops).join('circle').attr('cx',p=>p[0]).attr('cy',p=>p[1]).attr('fill','#fff').attr('stroke','#1ca4f2');
+ const L=node.getTotalLength(),mv=moveG.append('g'),m=mv.append('g').attr('class','m');
+ m.append('circle').attr('r',11).attr('fill','#ffd166').attr('fill-opacity',.3);m.append('circle').attr('r',5.5).attr('fill','#ffd166').attr('stroke','#021a3a').attr('stroke-width',1.5);
+ const loop=()=>mv.transition().duration(Math.max(3000,Math.min(8000,(x.d||4)*600))).ease(d3.easeSinInOut).attrTween('transform',()=>u=>{const p=node.getPointAtLength(u*L);return `translate(${p.x},${p.y})`}).on('end',loop);loop();
+ const ti=$('#tripinfo');if(ti){ti.style.display='block';ti.innerHTML=`<span class="muted">${i==(d.t||[]).length-1?'Última viagem':'Viagem selecionada'}${x.r?' (concluída)':' (em andamento)'} · linha aproximada ligando as cidades por onde a isca passou, não é o trajeto exato</span><br><b>${x.r?`${x.s} → ${x.r}`:`Saiu em ${x.sai||x.s} · em andamento`}</b><br>${x.d!=null?`Ida e volta em <b>${fmt(x.d)} dias</b>`:'Viagem em andamento'} · ${fmt(x.km,0)} km da base · ${x.c.map(k=>k.replace('/',' / ')).join(' → ')}`}
+ sizes();
+ if(zoomTo){const fp=pts.slice();const xs=fp.map(p=>p[0]),ys=fp.map(p=>p[1]),x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys);
+  const side=!matchMedia('(max-width:560px)').matches,k=Math.min(30,(side?0.4:0.7)*Math.min(W/Math.max(x1-x0,30),H/Math.max(y1-y0,30)));
+  svg.transition().duration(600).call(zoom.transform,d3.zoomIdentity.translate((side?W*0.76:W/2)-k*(x0+x1)/2,H/2-k*(y0+y1)/2).scale(k))}
+}
+render();
+async function atualiza(){
+ try{const b=await baixa('abc.enc');if(b===blobL)return;blobL=b;aplica(await abrir(SENHA,b));derive();document.querySelectorAll('.card').forEach(c=>{const f=FIL.find(x=>x.k==c.dataset.k);if(f)c.querySelector('.v').textContent=DEV.filter(f.f).length});render(false);if(sel)pick(sel.id,true)}catch(e){}
+}
+setInterval(atualiza,60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)atualiza()});
+})();
+</script>
+
+</body></html>
