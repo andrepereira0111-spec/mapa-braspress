@@ -156,7 +156,7 @@ aplica(LIVE);
 const saiDate=x=>{const m=(x.sai||'').match(/(\d+)\/(\d+) (\d+):(\d+)/);if(!m)return null;let d=new Date(REFT.getFullYear(),m[2]-1,+m[1],+m[3],+m[4]);if(d>REFT)d.setFullYear(d.getFullYear()-1);return d};
 const since=x=>{const d=saiDate(x);if(!d)return '';const h=(REFT-d)/36e5;return h<24?`há ${Math.round(h)} h`:`há ${fmt(h/24,1)} dias`};
 const COL={ok:'#36d399',amber:'#f59f0a',red:'#ff5a5f',sky:'#1ca4f2',gray:'#8aa0bd'};
-const ST=a=>a<=1?{k:'A',n:'Ativa',c:COL.ok}:a<=7?{k:'B',n:'Atrasada',c:COL.amber}:{k:'C',n:'Sem comunicar',c:COL.red};
+const ST=a=>a<=1?{k:'A',n:'Atualizando agora',c:COL.ok}:a<=7?{k:'B',n:'Pouco atrasada',c:COL.amber}:{k:'C',n:'Muito atrasada',c:COL.red};
 const BT=b=>b>=50?{k:'ok',n:'50% ou mais',c:COL.ok}:b>20?{k:'mid',n:'21% a 49%',c:COL.amber}:{k:'low',n:'20% ou menos',c:COL.red};
 const SI=d=>d.km==null?{k:'x',n:'Sem posição',c:COL.gray}:d.km<45?{k:'base',n:'Na base',c:COL.sky}:{k:'rota',n:'Em rota',c:COL.amber};
 const ageTxt=a=>a<1/24?'agora':a<1?`há ${Math.round(a*24)} h`:`há ${fmt(a,0)} ${Math.round(a)==1?'dia':'dias'}`;
@@ -165,9 +165,9 @@ const derive=()=>DEV.forEach(d=>{d.st=ST(d.age);d.bt=BT(d.bat);d.si=SI(d);d.open
 
 const FIL=[
  {k:'all',l:'Total de iscas',d:'Base ativa no Sitalcom',c:'#1ca4f2',f:()=>true},
- {k:'A',l:'Ativas',d:'Comunicaram em até 24 h',c:COL.ok,f:d=>d.st.k=='A'},
- {k:'B',l:'Atrasadas',d:'1 a 7 dias sem comunicar',c:COL.amber,f:d=>d.st.k=='B'},
- {k:'C',l:'Sem comunicar',d:'Mais de 7 dias',c:COL.red,f:d=>d.st.k=='C'},
+ {k:'A',l:'Atualizando agora',d:'Comunicaram em até 24 h',c:COL.ok,f:d=>d.st.k=='A'},
+ {k:'B',l:'Pouco atrasadas',d:'1 a 7 dias sem comunicar',c:COL.amber,f:d=>d.st.k=='B'},
+ {k:'C',l:'Muito atrasadas',d:'Mais de 7 dias sem comunicar',c:COL.red,f:d=>d.st.k=='C'},
  {k:'rota',l:'Em rota',d:'Fora da base e comunicando (até 7 d)',c:'#f59f0a',f:d=>d.si.k=='rota'&&d.age<=7},
  {k:'low',l:'Bateria crítica',d:'20% ou menos',c:COL.red,f:d=>d.bat<=20}];
 let filt='all',q='',sortK='age',asc=true,colorBy='st',sel=null,showBaseOnly=false,baseN=0,kz=1,cur=[];
@@ -255,6 +255,7 @@ function pick(id,quiet){
   <div class="it"><div class="k">Bateria dura (60% a 20%)</div><div class="x">${d.aut?fmt(d.aut)+' dias':'–'}</div></div>
   <div class="it"><div class="k">Ida e volta típica</div><div class="x">${d.med!=null?fmt(d.med)+' dias':'–'}</div></div>
  </div>
+ ${d.age>1?`<div class="tripinfo" style="border-left-color:${d.st.c}"><b>Onde parou</b><br>Última comunicação em <b>${d.lc}</b> (${ageTxt(d.age)}).<br>Última posição: <b>${city(d)||'sem cidade'}</b>${d.km!=null?`, a ${fmt(d.km,0)} km da base`:''}. Bateria nessa hora: <b>${d.bat}%</b>.</div>`:''}
  ${d.open&&d.si.k=='rota'?`<div class="tripinfo" style="border-left-color:${COL.amber}"><b>Viagem em andamento</b><br>Saiu da base de São Bernardo em <b>${d.open.sai||d.open.s}</b>${d.open.sai?` (${since(d.open)})`:''}.<br>Agora em <b>${city(d)}</b>, a ${fmt(d.km,0)} km da base. Ponto mais distante até aqui: ${d.open.dest}.</div>`:''}
  ${d.aut&&d.med&&d.aut<d.med?`<div style="font-size:13px;color:${COL.red}">Atenção: a bateria desta isca dura menos que a viagem típica dela.</div>`:''}
  <div class="trips"><div class="muted"><span>Últimas viagens (clique para ver no mapa)</span><span>dias · destino</span></div>${t.map((x,i)=>[x,i]).slice(-5).reverse().map(([x,i])=>`<div class="tr" data-i="${i}"><span>${x.sai&&!x.r?x.sai:x.s} → ${x.r||'em andamento'}</span><span>${x.d!=null?fmt(x.d)+' d':'–'} · ${x.dest}</span></div>`).join('')||'<div class="muted">Sem viagens registradas desde 01/09/2026.</div>'}</div><div class="tripinfo" id="tripinfo" style="display:none"></div>`;
